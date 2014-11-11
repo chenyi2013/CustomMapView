@@ -3,65 +3,68 @@ package com.example.custommapview;
 import java.util.ArrayList;
 
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.graphics.Rect;
-import android.graphics.drawable.BitmapDrawable;
-import android.os.Build;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class CustomMapView extends View {
 
-	private int mWidth;
-	private int mHeight;
 	private Context mContext;
 	private Paint mCirclePaint;
 
+	private float moveX = 0;
+	private float moveY = 0;
+
+	private float currentX = 0;
+	private float currentY = 0;
+
+	private float scaleFactor = 1f;
+	private int showLocation = 0;
+
+	private boolean isChoice = false;
+	private float lineHeight = 20;
+
 	private ArrayList<GraphData> datas;
+	private OnClickGraphListener onClickGraphListener;
 
-	private void initData() {
-		datas = new ArrayList<GraphData>();
-		datas.add(new GraphData(205, 223, GraphData.BLUE_POINT));
-		datas.add(new GraphData(321, 157, GraphData.BLUE_POINT));
-		datas.add(new GraphData(520, 58, GraphData.BLUE_POINT));
-		datas.add(new GraphData(543, 250, GraphData.BLUE_POINT));
-		datas.add(new GraphData(205, 425, GraphData.BLUE_POINT));
-		datas.add(new GraphData(368, 285, GraphData.BLUE_POINT));
-		datas.add(new GraphData(343, 396, GraphData.BLUE_POINT));
-		datas.add(new GraphData(497, 445, GraphData.BLUE_POINT));
-		datas.add(new GraphData(223, 576, GraphData.BLUE_POINT));
-		datas.add(new GraphData(511, 605, GraphData.BLUE_POINT));
+	public OnClickGraphListener getOnClickGraphListener() {
+		return onClickGraphListener;
+	}
 
-		datas.add(new GraphData(424, 160, GraphData.RED_POINT));
-		datas.add(new GraphData(626, 174, GraphData.RED_POINT));
-		datas.add(new GraphData(231, 285, GraphData.RED_POINT));
-		datas.add(new GraphData(654, 312, GraphData.RED_POINT));
-		datas.add(new GraphData(444, 364, GraphData.RED_POINT));
-		datas.add(new GraphData(637, 494, GraphData.RED_POINT));
-		datas.add(new GraphData(335, 542, GraphData.RED_POINT));
+	public void setOnClickGraphListener(
+			OnClickGraphListener onClickGraphListener) {
+		this.onClickGraphListener = onClickGraphListener;
+	}
 
+	public interface OnClickGraphListener {
+		public void onClick(int position);
+	}
+
+	public void bindData(ArrayList<GraphData> datas) {
+
+		this.datas = datas;
+		invalidate();
 	}
 
 	public CustomMapView(Context context) {
 		super(context);
 		mContext = context;
 		init(context);
-		initData();
+
 	}
 
 	public CustomMapView(Context context, AttributeSet attrs) {
 		super(context, attrs);
 		mContext = context;
 		init(context);
-		initData();
 
 	}
 
@@ -69,7 +72,6 @@ public class CustomMapView extends View {
 		super(context, attrs, defStyleAttr);
 		mContext = context;
 		init(context);
-		initData();
 
 	}
 
@@ -81,20 +83,25 @@ public class CustomMapView extends View {
 		mCirclePaint.setStrokeWidth(2);
 		mCirclePaint.setColor(0xff000000);
 
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inJustDecodeBounds = false;
-		BitmapFactory.decodeStream(
-				context.getResources().openRawResource(R.raw.ic_test),
-				new Rect(), options);
-		mWidth = options.outWidth;
-		mHeight = options.outHeight;
+	}
 
-		Bitmap bitmap = BitmapFactory.decodeStream(mContext.getResources()
-				.openRawResource(R.raw.ic_test), new Rect(), options);
-		BitmapDrawable bitmapDrawable = new BitmapDrawable(getResources(),
-				bitmap);
-		setBackground(bitmapDrawable);
-		System.out.println("start");
+	public void setShowLocation(int location) {
+		showLocation = location;
+		invalidate();
+	}
+
+	public void scaleUp() {
+
+		scaleFactor = scaleFactor + 0.5f;
+		invalidate();
+
+	}
+
+	public void scaleDown() {
+		if (scaleFactor > 0.5f) {
+			scaleFactor = scaleFactor - 0.5f;
+			invalidate();
+		}
 
 	}
 
@@ -103,36 +110,89 @@ public class CustomMapView extends View {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 		GraphData data = null;
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = false;
+		Bitmap bitmap = BitmapFactory.decodeStream(mContext.getResources()
+				.openRawResource(R.raw.ic_test), new Rect(), options);
+		Matrix matrix = new Matrix();
+		matrix.postScale(scaleFactor, scaleFactor);
+		Bitmap resizeBmp = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
+				bitmap.getHeight(), matrix, true);
+		canvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
+		bitmap.recycle();
+
+		if (datas == null) {
+			return;
+		}
 
 		for (int i = 0; i < datas.size(); i++) {
 			data = datas.get(i);
-			canvas.drawCircle(data.getX(), data.getY(), 5, mCirclePaint);
+			canvas.drawCircle(moveX + scaleFactor * data.getX(), moveY
+					+ scaleFactor * data.getY(), 5, mCirclePaint);
 		}
-	}
 
-	@Override
-	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		setMeasuredDimension(mWidth, mHeight);
+		data = datas.get(showLocation);
+		Bitmap bitmap1 = null;
+		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
+				* data.getY(), moveX + scaleFactor * data.getX(), moveY
+				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
+		bitmap1 = BitmapFactory.decodeResource(getResources(),
+				R.drawable.ic_launcher);
+
+		canvas.drawBitmap(bitmap1,
+				moveX + scaleFactor * data.getX() - bitmap1.getWidth() / 2,
+				moveY + scaleFactor * data.getY() - bitmap1.getHeight()
+						- lineHeight, mCirclePaint);
+		bitmap1.recycle();
+
+		// Bitmap bitmap1 = null;
+		// for (int i = 0; i < datas.size(); i++) {
+		// data = datas.get(i);
+		// canvas.drawLine(moveX + scaleFactor * data.getX(), moveY
+		// + scaleFactor * data.getY(),
+		// moveX + scaleFactor * data.getX(), moveY + scaleFactor
+		// * data.getY() - 20, mCirclePaint);
+		// bitmap1 = BitmapFactory.decodeResource(getResources(),
+		// R.drawable.ic_launcher);
+		//
+		// canvas.drawBitmap(bitmap1, moveX + scaleFactor * data.getX()
+		// - bitmap1.getWidth() / 2, moveY + scaleFactor * data.getY()
+		// - bitmap1.getHeight() - 20, mCirclePaint);
+		// bitmap1.recycle();
+		// }
 	}
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
+
 		GraphData data = null;
+
+		float dx = -1;
+		float dy = -1;
+
 		switch (event.getAction()) {
 		case MotionEvent.ACTION_DOWN:
 
-			for (int i = 0; i < datas.size(); i++) {
-				data = datas.get(i);
+			currentX = event.getX();
+			currentY = event.getY();
 
-				if (event.getX() >= data.getX() - 5
-						&& event.getX() <= data.getX() + 5
-						&& event.getY() >= data.getY() - 5
-						&& event.getY() <= data.getY() + 5) {
-					
-					System.out.println("choice:"+i);
+			if (datas != null) {
+
+				data = datas.get(showLocation);
+				Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
+						R.drawable.ic_launcher);
+				if (moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2 <= currentX
+						&& moveX + scaleFactor * data.getX()
+								+ bitmap.getWidth() / 2 >= currentX
+						&& moveY + scaleFactor * data.getY()
+								- bitmap.getHeight() - lineHeight <= currentY
+						&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
+
+					isChoice = true;
 
 				}
+				bitmap.recycle();
+
 			}
 
 			break;
@@ -141,13 +201,25 @@ public class CustomMapView extends View {
 			break;
 		case MotionEvent.ACTION_UP:
 
-			break;
+			dx = event.getX() - currentX;
+			dy = event.getY() - currentY;
+
+			if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
+				if (onClickGraphListener != null) {
+					onClickGraphListener.onClick(showLocation);
+				}
+			}
+
 		case MotionEvent.ACTION_CANCEL:
 
+			isChoice = false;
+			moveX = event.getX() - currentX + moveX;
+			moveY = event.getY() - currentY + moveY;
+			invalidate();
 			break;
 
 		}
-		return super.onTouchEvent(event);
+		return true;
 	}
 
 }
