@@ -23,6 +23,9 @@ public class CustomMapView extends View {
 	private float moveX = 0;
 	private float moveY = 0;
 
+	private float distanceX = 0;
+	private float distanceY = 0;
+
 	private float currentX = 0;
 	private float currentY = 0;
 
@@ -194,9 +197,12 @@ public class CustomMapView extends View {
 				bitmap.recycle();
 
 			}
-
 			break;
 		case MotionEvent.ACTION_MOVE:
+
+			moveX = distanceX + event.getX() - currentX;
+			moveY = distanceY + event.getY() - currentY;
+			invalidate();
 
 			break;
 		case MotionEvent.ACTION_UP:
@@ -213,8 +219,12 @@ public class CustomMapView extends View {
 		case MotionEvent.ACTION_CANCEL:
 
 			isChoice = false;
-			moveX = event.getX() - currentX + moveX;
-			moveY = event.getY() - currentY + moveY;
+			moveX = event.getX() - currentX + distanceX;
+			moveY = event.getY() - currentY + distanceY;
+
+			distanceX = moveX;
+			distanceY = moveY;
+
 			invalidate();
 			break;
 
