@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.FloatMath;
 import android.util.Property;
 import android.view.MotionEvent;
 import android.view.View;
@@ -22,7 +23,12 @@ import android.view.View;
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class CustomMapView extends View {
 
+	private final int SCALE_MODE = 1;
+	private final int MOVE_MODE = 2;
+
 	private Paint mCirclePaint;
+
+	private float scale;
 
 	private float moveX = 0;
 	private float moveY = 0;
@@ -35,8 +41,14 @@ public class CustomMapView extends View {
 
 	private float scaleFactor = 1f;
 	private float previousScaleFactor = 1f;
-	
+
 	private int showLocation = 0;
+	private int touchMode = -1;
+
+	AnimatorSet mAnimatorSet;
+
+	private float oldDistance;
+	private float newDistance;
 
 	private boolean isChoice = false;
 	private float lineHeight = 20;
@@ -72,10 +84,16 @@ public class CustomMapView extends View {
 	};
 
 	private void startAnimator(float start, float end) {
-		AnimatorSet set = new AnimatorSet();
-		set.play(ObjectAnimator.ofFloat(this, mSacleFactorProperty, start, end));
-		set.setDuration(500);
-		set.start();
+
+		if (mAnimatorSet != null && mAnimatorSet.isRunning()) {
+			return;
+		}
+		mAnimatorSet = new AnimatorSet();
+		mAnimatorSet.play(ObjectAnimator.ofFloat(this, mSacleFactorProperty,
+				start, end));
+		mAnimatorSet.setDuration(500);
+		mAnimatorSet.start();
+
 	}
 
 	public OnClickGraphListener getOnClickGraphListener() {
@@ -93,7 +111,6 @@ public class CustomMapView extends View {
 
 	public void setMapBitmap(Bitmap mMapBitmap) {
 		this.mMapBitmap = mMapBitmap;
-
 		invalidate();
 	}
 
@@ -228,6 +245,13 @@ public class CustomMapView extends View {
 		// }
 	}
 
+	// Çó¾àÀë
+	private float getSpacing(MotionEvent event) {
+		float x = event.getX(0) - event.getX(1);
+		float y = event.getY(0) - event.getY(1);
+		return FloatMath.sqrt(x * x + y * y);
+	}
+
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 
@@ -236,7 +260,7 @@ public class CustomMapView extends View {
 		float dx = -1;
 		float dy = -1;
 
-		switch (event.getAction()) {
+		switch (event.getActionMasked()) {
 		case MotionEvent.ACTION_DOWN:
 
 			currentX = event.getX();
@@ -260,35 +284,66 @@ public class CustomMapView extends View {
 				bitmap.recycle();
 
 			}
+			touchMode = MOVE_MODE;
 			break;
+		case MotionEvent.ACTION_POINTER_DOWN:
+
+			touchMode = SCALE_MODE;
+			oldDistance = getSpacing(event);
+			break;
+
 		case MotionEvent.ACTION_MOVE:
 
-			moveX = distanceX + event.getX() - currentX;
-			moveY = distanceY + event.getY() - currentY;
-			invalidate();
+			if (touchMode == MOVE_MODE) {
+				moveX = distanceX + event.getX() - currentX;
+				moveY = distanceY + event.getY() - currentY;
+				invalidate();
+			}
+
+			if (touchMode == SCALE_MODE && event.getPointerCount() > 1) {
+
+				newDistance = getSpacing(event);
+				if (newDistance > 20) {
+					scale = newDistance / oldDistance;
+				}
+			}
+			break;
+
+		case MotionEvent.ACTION_POINTER_UP:
 
 			break;
 		case MotionEvent.ACTION_UP:
 
-			dx = event.getX() - currentX;
-			dy = event.getY() - currentY;
+			if (touchMode == MOVE_MODE) {
+				dx = event.getX() - currentX;
+				dy = event.getY() - currentY;
 
-			if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
-				if (onClickGraphListener != null) {
-					onClickGraphListener.onClick(showLocation);
+				if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
+					if (onClickGraphListener != null) {
+						onClickGraphListener.onClick(showLocation);
+					}
+				}
+			} else if (touchMode == SCALE_MODE) {
+				if (scale > 1.2) {
+					scaleUp();
+				} else if (scale < 0.8) {
+					scaleDown();
 				}
 			}
 
 		case MotionEvent.ACTION_CANCEL:
 
-			isChoice = false;
-			moveX = event.getX() - currentX + distanceX;
-			moveY = event.getY() - currentY + distanceY;
+			if (touchMode == MOVE_MODE) {
+				isChoice = false;
+				moveX = event.getX() - currentX + distanceX;
+				moveY = event.getY() - currentY + distanceY;
 
-			distanceX = moveX;
-			distanceY = moveY;
+				distanceX = moveX;
+				distanceY = moveY;
 
-			invalidate();
+				invalidate();
+			}
+			scale = -1;
 			break;
 
 		}
