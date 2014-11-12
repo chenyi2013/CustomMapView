@@ -2,8 +2,9 @@ package com.example.custommapview;
 
 import java.util.ArrayList;
 
-import com.example.custommapview.CustomMapView.OnClickGraphListener;
-
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -16,6 +17,8 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
 import android.widget.Toast;
+
+import com.example.custommapview.CustomMapView.OnClickGraphListener;
 
 public class MainActivity extends ActionBarActivity implements OnClickListener {
 
@@ -35,6 +38,12 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		mScaleDown.setOnClickListener(this);
 		mCustomMapView = (CustomMapView) findViewById(R.id.map_view);
 		mCustomMapView.bindData(mData = getData());
+
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		options.inJustDecodeBounds = false;
+		Bitmap bitmap = BitmapFactory.decodeStream(getResources()
+				.openRawResource(R.raw.ic_test), new Rect(), options);
+		mCustomMapView.setMapBitmap(bitmap);
 		mCustomMapView.setOnClickGraphListener(new OnClickGraphListener() {
 
 			@Override

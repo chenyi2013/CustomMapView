@@ -2,7 +2,10 @@ package com.example.custommapview;
 
 import java.util.ArrayList;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,14 +13,15 @@ import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.graphics.Rect;
+import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Property;
 import android.view.MotionEvent;
 import android.view.View;
 
+@TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class CustomMapView extends View {
 
-	private Context mContext;
 	private Paint mCirclePaint;
 
 	private float moveX = 0;
@@ -30,13 +34,49 @@ public class CustomMapView extends View {
 	private float currentY = 0;
 
 	private float scaleFactor = 1f;
+	private float previousScaleFactor = 1f;
+	
 	private int showLocation = 0;
 
 	private boolean isChoice = false;
 	private float lineHeight = 20;
+	private boolean isFirst = true;
+
+	private Bitmap mMapBitmap;
 
 	private ArrayList<GraphData> datas;
+
 	private OnClickGraphListener onClickGraphListener;
+
+	private Property<CustomMapView, Float> mSacleFactorProperty = new Property<CustomMapView, Float>(
+			Float.class, "scaleFactor") {
+
+		@Override
+		public Float get(CustomMapView object) {
+			return object.scaleFactor;
+		}
+
+		@Override
+		public void set(CustomMapView object, Float value) {
+			object.scaleFactor = value;
+			moveX = moveX
+					- ((scaleFactor - previousScaleFactor) * mMapBitmap
+							.getWidth()) / 2;
+			moveY = moveY
+					- ((scaleFactor - previousScaleFactor) * mMapBitmap
+							.getHeight()) / 2;
+			distanceX = moveX;
+			distanceY = moveY;
+			invalidate();
+		};
+	};
+
+	private void startAnimator(float start, float end) {
+		AnimatorSet set = new AnimatorSet();
+		set.play(ObjectAnimator.ofFloat(this, mSacleFactorProperty, start, end));
+		set.setDuration(500);
+		set.start();
+	}
 
 	public OnClickGraphListener getOnClickGraphListener() {
 		return onClickGraphListener;
@@ -45,6 +85,16 @@ public class CustomMapView extends View {
 	public void setOnClickGraphListener(
 			OnClickGraphListener onClickGraphListener) {
 		this.onClickGraphListener = onClickGraphListener;
+	}
+
+	public Bitmap getMapBitmap() {
+		return mMapBitmap;
+	}
+
+	public void setMapBitmap(Bitmap mMapBitmap) {
+		this.mMapBitmap = mMapBitmap;
+
+		invalidate();
 	}
 
 	public interface OnClickGraphListener {
@@ -59,21 +109,18 @@ public class CustomMapView extends View {
 
 	public CustomMapView(Context context) {
 		super(context);
-		mContext = context;
 		init(context);
 
 	}
 
 	public CustomMapView(Context context, AttributeSet attrs) {
 		super(context, attrs);
-		mContext = context;
 		init(context);
 
 	}
 
 	public CustomMapView(Context context, AttributeSet attrs, int defStyleAttr) {
 		super(context, attrs, defStyleAttr);
-		mContext = context;
 		init(context);
 
 	}
@@ -94,16 +141,14 @@ public class CustomMapView extends View {
 	}
 
 	public void scaleUp() {
-
-		scaleFactor = scaleFactor + 0.5f;
-		invalidate();
-
+		if (scaleFactor < 2) {
+			startAnimator(scaleFactor, scaleFactor + 0.5f);
+		}
 	}
 
 	public void scaleDown() {
 		if (scaleFactor > 0.5f) {
-			scaleFactor = scaleFactor - 0.5f;
-			invalidate();
+			startAnimator(scaleFactor, scaleFactor - 0.5f);
 		}
 
 	}
@@ -112,17 +157,33 @@ public class CustomMapView extends View {
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
+
 		GraphData data = null;
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		options.inJustDecodeBounds = false;
-		Bitmap bitmap = BitmapFactory.decodeStream(mContext.getResources()
-				.openRawResource(R.raw.ic_test), new Rect(), options);
+
+		if (mMapBitmap == null) {
+			return;
+		}
+
+		if (isFirst) {
+
+			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
+			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
+
+			distanceX = moveX;
+			distanceY = moveY;
+
+			isFirst = false;
+		}
+
 		Matrix matrix = new Matrix();
 		matrix.postScale(scaleFactor, scaleFactor);
-		Bitmap resizeBmp = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(),
-				bitmap.getHeight(), matrix, true);
+		Bitmap resizeBmp = Bitmap.createBitmap(mMapBitmap, 0, 0,
+				mMapBitmap.getWidth(), mMapBitmap.getHeight(), matrix, true);
 		canvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
-		bitmap.recycle();
+
+		if (!mMapBitmap.equals(resizeBmp)) {
+			resizeBmp.recycle();
+		}
 
 		if (datas == null) {
 			return;
@@ -135,18 +196,20 @@ public class CustomMapView extends View {
 		}
 
 		data = datas.get(showLocation);
-		Bitmap bitmap1 = null;
+		Bitmap bitmap = null;
 		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
 				* data.getY(), moveX + scaleFactor * data.getX(), moveY
 				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-		bitmap1 = BitmapFactory.decodeResource(getResources(),
+		bitmap = BitmapFactory.decodeResource(getResources(),
 				R.drawable.ic_launcher);
 
-		canvas.drawBitmap(bitmap1,
-				moveX + scaleFactor * data.getX() - bitmap1.getWidth() / 2,
-				moveY + scaleFactor * data.getY() - bitmap1.getHeight()
+		canvas.drawBitmap(bitmap,
+				moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2,
+				moveY + scaleFactor * data.getY() - bitmap.getHeight()
 						- lineHeight, mCirclePaint);
-		bitmap1.recycle();
+		bitmap.recycle();
+
+		previousScaleFactor = scaleFactor;
 
 		// Bitmap bitmap1 = null;
 		// for (int i = 0; i < datas.size(); i++) {
@@ -230,6 +293,14 @@ public class CustomMapView extends View {
 
 		}
 		return true;
+	}
+
+	@Override
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+		if (mMapBitmap != null) {
+			mMapBitmap.recycle();
+		}
 	}
 
 }
