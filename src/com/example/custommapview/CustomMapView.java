@@ -20,40 +20,105 @@ import android.util.Property;
 import android.view.MotionEvent;
 import android.view.View;
 
+/**
+ * 
+ * @author Kevin
+ * 
+ */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class CustomMapView extends View {
 
+	/**
+	 * 当touchMode等于该值时表示当前的手势模式处于缩放手势模式
+	 */
 	private final int SCALE_MODE = 1;
+	/**
+	 * 当touchMode等于该值时表示当前的手势模式处于移动手势模式
+	 */
 	private final int MOVE_MODE = 2;
 
 	private Paint mCirclePaint;
 
+	/**
+	 * 在缩放手势模拟时两手指所产生的缩放因子
+	 */
 	private float scale;
 
+	/**
+	 * 地图在X轴方向的起点座标
+	 */
 	private float moveX = 0;
+	/**
+	 * 地图在Y轴方向的起点座标
+	 */
 	private float moveY = 0;
 
+	/**
+	 * 手指在X轴方向移动的距离
+	 */
 	private float distanceX = 0;
+	/**
+	 * 手指在Y轴方向移动的距离
+	 */
 	private float distanceY = 0;
 
+	/**
+	 * 手指在屏幕上按下的点在X轴方向的座标
+	 */
 	private float currentX = 0;
+	/**
+	 * 手指在屏幕上按下的点在Y轴方向的座标
+	 */
 	private float currentY = 0;
 
+	/**
+	 * 地图的当前缩放因子
+	 */
 	private float scaleFactor = 1f;
+
+	/**
+	 * 地图的前一次缩放因子
+	 */
 	private float previousScaleFactor = 1f;
 
+	/**
+	 * 当前在地图上标出的标签
+	 */
 	private int showLocation = 0;
+	/**
+	 * 手势模式，如果是常量SCALE_MODE代表当前处于缩放手势模式如果是MOVE_MODE代表处于移动手势模式
+	 */
 	private int touchMode = -1;
 
-	AnimatorSet mAnimatorSet;
+	private AnimatorSet mAnimatorSet;
 
+	/**
+	 * 在缩放手势模式下两手指之间按在屏幕按下上时的初始距离
+	 */
 	private float oldDistance;
+	/**
+	 * 在缩放手势模式下两手指之间按在屏幕上移动或抬起时的距离
+	 */
 	private float newDistance;
 
+	/**
+	 * 判断当前在地图上标出的标签在手指按下时是否被点击
+	 */
 	private boolean isChoice = false;
+
+	/**
+	 * 当前在地图上标出的标签底部竖线的高度
+	 */
 	private float lineHeight = 20;
+
+	/**
+	 * 用于判断是否是初次设置地图图片
+	 */
 	private boolean isFirst = true;
 
+	/**
+	 * 设置的地图图片
+	 */
 	private Bitmap mMapBitmap;
 
 	private ArrayList<GraphData> datas;
