@@ -295,18 +295,86 @@ public class CustomMapView extends View {
 		case MotionEvent.ACTION_MOVE:
 
 			if (touchMode == MOVE_MODE) {
-				moveX = distanceX + event.getX() - currentX;
-				moveY = distanceY + event.getY() - currentY;
-				invalidate();
-			}
 
-			if (touchMode == SCALE_MODE && event.getPointerCount() > 1) {
+				float width = scaleFactor * mMapBitmap.getWidth();
+				float height = scaleFactor * mMapBitmap.getHeight();
+
+				if (width <= getWidth()
+						&& distanceX + event.getX() - currentX >= 0
+						&& distanceX + event.getX() - currentX <= getWidth()
+								- width) {
+					moveX = distanceX + event.getX() - currentX;
+
+				} else if (width <= getWidth()
+						&& distanceX + event.getX() - currentX < 0) {
+					moveX = 0;
+				} else if (width <= getWidth()
+						&& distanceX + event.getX() - currentX > getWidth()
+								- width) {
+					moveX = getWidth() - width;
+				}
+
+				if (height <= getHeight()
+						&& distanceY + event.getY() - currentY >= 0
+						&& distanceY + event.getY() - currentY <= getHeight()
+								- height) {
+					moveY = distanceY + event.getY() - currentY;
+
+				} else if (height <= getHeight()
+						&& distanceY + event.getY() - currentY < 0) {
+					moveY = 0;
+				} else if (height <= getHeight()
+						&& distanceY + event.getY() - currentY > getHeight()
+								- height) {
+					moveY = getHeight() - height;
+				}
+
+				// ----------------------------------
+				if (width > getWidth() && event.getX() - currentX > 0) {
+					if (distanceX + event.getX() - currentX <= 0) {
+						moveX = distanceX + event.getX() - currentX;
+					} else {
+						moveX = 0;
+					}
+
+				} else if (width > getWidth() && event.getX() - currentX < 0) {
+					if (distanceX + event.getX() - currentX >= getWidth()
+							- width) {
+						moveX = distanceX + event.getX() - currentX;
+					} else {
+						moveX = getWidth() - width;
+					}
+
+				}
+
+				if (height > getHeight() && event.getY() - currentY > 0) {
+					if (distanceY + event.getY() - currentY <= 0) {
+						moveY = distanceY + event.getY() - currentY;
+					} else {
+						moveY = 0;
+					}
+
+				} else if (height > getHeight() && event.getY() - currentY < 0) {
+					if (distanceY + event.getY() - currentY >= getHeight()
+							- height) {
+						moveY = distanceY + event.getY() - currentY;
+					} else {
+						moveY = getHeight() - height;
+					}
+
+				}
+				// ----------------------------------------
+
+				invalidate();
+
+			} else if (touchMode == SCALE_MODE && event.getPointerCount() > 1) {
 
 				newDistance = getSpacing(event);
 				if (newDistance > 20) {
 					scale = newDistance / oldDistance;
 				}
 			}
+
 			break;
 
 		case MotionEvent.ACTION_POINTER_UP:
@@ -335,13 +403,79 @@ public class CustomMapView extends View {
 
 			if (touchMode == MOVE_MODE) {
 				isChoice = false;
-				moveX = event.getX() - currentX + distanceX;
-				moveY = event.getY() - currentY + distanceY;
+				float width = scaleFactor * mMapBitmap.getWidth();
+				float height = scaleFactor * mMapBitmap.getHeight();
+
+				if (width <= getWidth()
+						&& distanceX + event.getX() - currentX >= 0
+						&& distanceX + event.getX() - currentX <= getWidth()
+								- width) {
+					moveX = distanceX + event.getX() - currentX;
+
+				} else if (width <= getWidth()
+						&& distanceX + event.getX() - currentX < 0) {
+					moveX = 0;
+				} else if (width <= getWidth()
+						&& distanceX + event.getX() - currentX > getWidth()
+								- width) {
+					moveX = getWidth() - width;
+				}
+
+				if (height <= getHeight()
+						&& distanceY + event.getY() - currentY >= 0
+						&& distanceY + event.getY() - currentY <= getHeight()
+								- height) {
+					moveY = distanceY + event.getY() - currentY;
+
+				} else if (height <= getHeight()
+						&& distanceY + event.getY() - currentY < 0) {
+					moveY = 0;
+				} else if (height <= getHeight()
+						&& distanceY + event.getY() - currentY > getHeight()
+								- height) {
+					moveY = getHeight() - height;
+				}
+
+				// ----------------------------------
+				if (width > getWidth() && event.getX() - currentX > 0) {
+					if (distanceX + event.getX() - currentX <= 0) {
+						moveX = distanceX + event.getX() - currentX;
+					} else {
+						moveX = 0;
+					}
+
+				} else if (width > getWidth() && event.getX() - currentX < 0) {
+					if (distanceX + event.getX() - currentX >= getWidth()
+							- width) {
+						moveX = distanceX + event.getX() - currentX;
+					} else {
+						moveX = getWidth() - width;
+					}
+
+				}
+
+				if (height > getHeight() && event.getY() - currentY > 0) {
+					if (distanceY + event.getY() - currentY <= 0) {
+						moveY = distanceY + event.getY() - currentY;
+					} else {
+						moveY = 0;
+					}
+
+				} else if (height > getHeight() && event.getY() - currentY < 0) {
+					if (distanceY + event.getY() - currentY >= getHeight()
+							- height) {
+						moveY = distanceY + event.getY() - currentY;
+					} else {
+						moveY = getHeight() - height;
+					}
+
+				}
+				// ----------------------------------------
 
 				distanceX = moveX;
 				distanceY = moveY;
-
 				invalidate();
+
 			}
 			scale = -1;
 			break;
