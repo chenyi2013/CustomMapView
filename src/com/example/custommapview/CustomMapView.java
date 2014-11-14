@@ -14,10 +14,12 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
 import android.os.Build;
+import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
-import android.util.FloatMath;
 import android.util.Property;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
 
 /**
@@ -28,21 +30,7 @@ import android.view.View;
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
 public class CustomMapView extends View {
 
-	/**
-	 * 当touchMode等于该值时表示当前的手势模式处于缩放手势模式
-	 */
-	private final int SCALE_MODE = 1;
-	/**
-	 * 当touchMode等于该值时表示当前的手势模式处于移动手势模式
-	 */
-	private final int MOVE_MODE = 2;
-
 	private Paint mCirclePaint;
-
-	/**
-	 * 在缩放手势模拟时两手指所产生的缩放因子
-	 */
-	private float scale;
 
 	/**
 	 * 地图在X轴方向的起点座标
@@ -52,24 +40,6 @@ public class CustomMapView extends View {
 	 * 地图在Y轴方向的起点座标
 	 */
 	private float moveY = 0;
-
-	/**
-	 * 手指在X轴方向移动的距离
-	 */
-	private float distanceX = 0;
-	/**
-	 * 手指在Y轴方向移动的距离
-	 */
-	private float distanceY = 0;
-
-	/**
-	 * 手指在屏幕上按下的点在X轴方向的座标
-	 */
-	private float currentX = 0;
-	/**
-	 * 手指在屏幕上按下的点在Y轴方向的座标
-	 */
-	private float currentY = 0;
 
 	/**
 	 * 地图的当前缩放因子
@@ -85,26 +55,7 @@ public class CustomMapView extends View {
 	 * 当前在地图上标出的标签
 	 */
 	private int showLocation = 0;
-	/**
-	 * 手势模式，如果是常量SCALE_MODE代表当前处于缩放手势模式如果是MOVE_MODE代表处于移动手势模式
-	 */
-	private int touchMode = -1;
-
 	private AnimatorSet mAnimatorSet;
-
-	/**
-	 * 在缩放手势模式下两手指之间按在屏幕按下上时的初始距离
-	 */
-	private float oldDistance;
-	/**
-	 * 在缩放手势模式下两手指之间按在屏幕上移动或抬起时的距离
-	 */
-	private float newDistance;
-
-	/**
-	 * 判断当前在地图上标出的标签在手指按下时是否被点击
-	 */
-	private boolean isChoice = false;
 
 	/**
 	 * 当前在地图上标出的标签底部竖线的高度
@@ -120,6 +71,19 @@ public class CustomMapView extends View {
 	 * 设置的地图图片
 	 */
 	private Bitmap mMapBitmap;
+	
+	/**
+	 * 手指在屏幕上按下的点在X轴方向的座标
+	 */
+	private float currentX = 0;
+	/**
+	 * 手指在屏幕上按下的点在Y轴方向的座标
+	 */
+	private float currentY = 0;
+	
+	private GestureDetectorCompat mDetector;
+	private ScaleGestureDetector scaleGestureDetector;
+
 
 	private ArrayList<GraphData> datas;
 
@@ -136,17 +100,19 @@ public class CustomMapView extends View {
 		@Override
 		public void set(CustomMapView object, Float value) {
 			object.scaleFactor = value;
-			moveX = moveX
-					- ((scaleFactor - previousScaleFactor) * mMapBitmap
-							.getWidth()) / 2;
-			moveY = moveY
-					- ((scaleFactor - previousScaleFactor) * mMapBitmap
-							.getHeight()) / 2;
-			distanceX = moveX;
-			distanceY = moveY;
+			scale();
 			invalidate();
 		};
 	};
+
+	private void scale() {
+		moveX = moveX
+				- ((scaleFactor - previousScaleFactor) * mMapBitmap.getWidth())
+				/ 2;
+		moveY = moveY
+				- ((scaleFactor - previousScaleFactor) * mMapBitmap.getHeight())
+				/ 2;
+	}
 
 	private void startAnimator(float start, float end) {
 
@@ -188,7 +154,11 @@ public class CustomMapView extends View {
 		this.datas = datas;
 		invalidate();
 	}
-
+	public void setShowLocation(int location) {
+		showLocation = location;
+		invalidate();
+	}
+	
 	public CustomMapView(Context context) {
 		super(context);
 		init(context);
@@ -206,34 +176,46 @@ public class CustomMapView extends View {
 		init(context);
 
 	}
+	
 
-	private void init(Context context) {
+	private void initPaint() {
 		mCirclePaint = new Paint();
 		mCirclePaint.setAntiAlias(true);
 		mCirclePaint.setDither(true);
 		mCirclePaint.setStyle(Style.STROKE);
 		mCirclePaint.setStrokeWidth(2);
 		mCirclePaint.setColor(0xff000000);
+	}
+
+	private void init(Context context) {
+		initPaint();
+		mDetector = new GestureDetectorCompat(getContext(),
+				new MyGestureListener());
+		scaleGestureDetector = new ScaleGestureDetector(getContext(),
+				new ScaleListener());
 
 	}
 
-	public void setShowLocation(int location) {
-		showLocation = location;
-		invalidate();
-	}
+	
 
 	public void scaleUp() {
-		if (scaleFactor < 2) {
+		if (scaleFactor < 2 && scaleFactor + 0.5f <= 2) {
 			startAnimator(scaleFactor, scaleFactor + 0.5f);
+		} else if (scaleFactor < 2 && scaleFactor + 0.5f > 2) {
+			startAnimator(scaleFactor, 2);
 		}
 	}
 
 	public void scaleDown() {
-		if (scaleFactor > 0.5f) {
+		if (scaleFactor > 0.5f && scaleFactor - 0.5f >= 0.5) {
 			startAnimator(scaleFactor, scaleFactor - 0.5f);
+		} else if (scaleFactor > 0.5f && scaleFactor - 0.5f < 0.5) {
+			startAnimator(scaleFactor, 0.5f);
 		}
 
 	}
+
+
 
 	@SuppressLint({ "DrawAllocation", "NewApi" })
 	@Override
@@ -250,9 +232,6 @@ public class CustomMapView extends View {
 
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
 			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
-
-			distanceX = moveX;
-			distanceY = moveY;
 
 			isFirst = false;
 		}
@@ -292,45 +271,44 @@ public class CustomMapView extends View {
 		bitmap.recycle();
 
 		previousScaleFactor = scaleFactor;
-
-		// Bitmap bitmap1 = null;
-		// for (int i = 0; i < datas.size(); i++) {
-		// data = datas.get(i);
-		// canvas.drawLine(moveX + scaleFactor * data.getX(), moveY
-		// + scaleFactor * data.getY(),
-		// moveX + scaleFactor * data.getX(), moveY + scaleFactor
-		// * data.getY() - 20, mCirclePaint);
-		// bitmap1 = BitmapFactory.decodeResource(getResources(),
-		// R.drawable.ic_launcher);
-		//
-		// canvas.drawBitmap(bitmap1, moveX + scaleFactor * data.getX()
-		// - bitmap1.getWidth() / 2, moveY + scaleFactor * data.getY()
-		// - bitmap1.getHeight() - 20, mCirclePaint);
-		// bitmap1.recycle();
-		// }
 	}
 
-	// 求距离
-	private float getSpacing(MotionEvent event) {
-		float x = event.getX(0) - event.getX(1);
-		float y = event.getY(0) - event.getY(1);
-		return FloatMath.sqrt(x * x + y * y);
+	@SuppressLint("ClickableViewAccessibility")
+	@Override
+	public boolean onTouchEvent(MotionEvent event) {
+		boolean retVal = scaleGestureDetector.onTouchEvent(event);
+	    retVal = mDetector.onTouchEvent(event) || retVal;
+	    return retVal || super.onTouchEvent(event);
 	}
 
 	@Override
-	public boolean onTouchEvent(MotionEvent event) {
+	protected void onDetachedFromWindow() {
+		super.onDetachedFromWindow();
+		if (mMapBitmap != null) {
+			mMapBitmap.recycle();
+		}
+	}
 
-		GraphData data = null;
-
-		float dx = -1;
-		float dy = -1;
-
-		switch (event.getActionMasked()) {
-		case MotionEvent.ACTION_DOWN:
-
-			currentX = event.getX();
-			currentY = event.getY();
-
+	class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
+		
+		private float x;
+		private float y;
+		
+		private float dx;
+		private float dy;
+		
+		private float width;
+		private float height;
+		
+		private GraphData data = null;
+		private boolean isChoice = false;
+		
+		@Override
+		public boolean onDown(MotionEvent e) {
+			
+			currentX = e.getX();
+			currentY = e.getY();
+			
 			if (datas != null) {
 
 				data = datas.get(showLocation);
@@ -349,211 +327,111 @@ public class CustomMapView extends View {
 				bitmap.recycle();
 
 			}
-			touchMode = MOVE_MODE;
-			break;
-		case MotionEvent.ACTION_POINTER_DOWN:
-
-			touchMode = SCALE_MODE;
-			oldDistance = getSpacing(event);
-			break;
-
-		case MotionEvent.ACTION_MOVE:
-
-			if (touchMode == MOVE_MODE) {
-
-				float width = scaleFactor * mMapBitmap.getWidth();
-				float height = scaleFactor * mMapBitmap.getHeight();
-
-				if (width <= getWidth()
-						&& distanceX + event.getX() - currentX >= 0
-						&& distanceX + event.getX() - currentX <= getWidth()
-								- width) {
-					moveX = distanceX + event.getX() - currentX;
-
-				} else if (width <= getWidth()
-						&& distanceX + event.getX() - currentX < 0) {
-					moveX = 0;
-				} else if (width <= getWidth()
-						&& distanceX + event.getX() - currentX > getWidth()
-								- width) {
-					moveX = getWidth() - width;
-				}
-
-				if (height <= getHeight()
-						&& distanceY + event.getY() - currentY >= 0
-						&& distanceY + event.getY() - currentY <= getHeight()
-								- height) {
-					moveY = distanceY + event.getY() - currentY;
-
-				} else if (height <= getHeight()
-						&& distanceY + event.getY() - currentY < 0) {
-					moveY = 0;
-				} else if (height <= getHeight()
-						&& distanceY + event.getY() - currentY > getHeight()
-								- height) {
-					moveY = getHeight() - height;
-				}
-
-				// ----------------------------------
-				if (width > getWidth() && event.getX() - currentX > 0) {
-					if (distanceX + event.getX() - currentX <= 0) {
-						moveX = distanceX + event.getX() - currentX;
-					} else {
-						moveX = 0;
-					}
-
-				} else if (width > getWidth() && event.getX() - currentX < 0) {
-					if (distanceX + event.getX() - currentX >= getWidth()
-							- width) {
-						moveX = distanceX + event.getX() - currentX;
-					} else {
-						moveX = getWidth() - width;
-					}
-
-				}
-
-				if (height > getHeight() && event.getY() - currentY > 0) {
-					if (distanceY + event.getY() - currentY <= 0) {
-						moveY = distanceY + event.getY() - currentY;
-					} else {
-						moveY = 0;
-					}
-
-				} else if (height > getHeight() && event.getY() - currentY < 0) {
-					if (distanceY + event.getY() - currentY >= getHeight()
-							- height) {
-						moveY = distanceY + event.getY() - currentY;
-					} else {
-						moveY = getHeight() - height;
-					}
-
-				}
-				// ----------------------------------------
-
-				invalidate();
-
-			} else if (touchMode == SCALE_MODE && event.getPointerCount() > 1) {
-
-				newDistance = getSpacing(event);
-				if (newDistance > 20) {
-					scale = newDistance / oldDistance;
-				}
-			}
-
-			break;
-
-		case MotionEvent.ACTION_POINTER_UP:
-
-			break;
-		case MotionEvent.ACTION_UP:
-
-			if (touchMode == MOVE_MODE) {
-				dx = event.getX() - currentX;
-				dy = event.getY() - currentY;
-
-				if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
-					if (onClickGraphListener != null) {
-						onClickGraphListener.onClick(showLocation);
-					}
-				}
-			} else if (touchMode == SCALE_MODE) {
-				if (scale > 1.2) {
-					scaleUp();
-				} else if (scale < 0.8) {
-					scaleDown();
-				}
-			}
-
-		case MotionEvent.ACTION_CANCEL:
-
-			if (touchMode == MOVE_MODE) {
-				isChoice = false;
-				float width = scaleFactor * mMapBitmap.getWidth();
-				float height = scaleFactor * mMapBitmap.getHeight();
-
-				if (width <= getWidth()
-						&& distanceX + event.getX() - currentX >= 0
-						&& distanceX + event.getX() - currentX <= getWidth()
-								- width) {
-					moveX = distanceX + event.getX() - currentX;
-
-				} else if (width <= getWidth()
-						&& distanceX + event.getX() - currentX < 0) {
-					moveX = 0;
-				} else if (width <= getWidth()
-						&& distanceX + event.getX() - currentX > getWidth()
-								- width) {
-					moveX = getWidth() - width;
-				}
-
-				if (height <= getHeight()
-						&& distanceY + event.getY() - currentY >= 0
-						&& distanceY + event.getY() - currentY <= getHeight()
-								- height) {
-					moveY = distanceY + event.getY() - currentY;
-
-				} else if (height <= getHeight()
-						&& distanceY + event.getY() - currentY < 0) {
-					moveY = 0;
-				} else if (height <= getHeight()
-						&& distanceY + event.getY() - currentY > getHeight()
-								- height) {
-					moveY = getHeight() - height;
-				}
-
-				// ----------------------------------
-				if (width > getWidth() && event.getX() - currentX > 0) {
-					if (distanceX + event.getX() - currentX <= 0) {
-						moveX = distanceX + event.getX() - currentX;
-					} else {
-						moveX = 0;
-					}
-
-				} else if (width > getWidth() && event.getX() - currentX < 0) {
-					if (distanceX + event.getX() - currentX >= getWidth()
-							- width) {
-						moveX = distanceX + event.getX() - currentX;
-					} else {
-						moveX = getWidth() - width;
-					}
-
-				}
-
-				if (height > getHeight() && event.getY() - currentY > 0) {
-					if (distanceY + event.getY() - currentY <= 0) {
-						moveY = distanceY + event.getY() - currentY;
-					} else {
-						moveY = 0;
-					}
-
-				} else if (height > getHeight() && event.getY() - currentY < 0) {
-					if (distanceY + event.getY() - currentY >= getHeight()
-							- height) {
-						moveY = distanceY + event.getY() - currentY;
-					} else {
-						moveY = getHeight() - height;
-					}
-
-				}
-				// ----------------------------------------
-
-				distanceX = moveX;
-				distanceY = moveY;
-				invalidate();
-
-			}
-			scale = -1;
-			break;
-
+			return true;
 		}
-		return true;
+
+		@Override
+		public boolean onScroll(MotionEvent e1, MotionEvent e2,
+				float distanceX, float distanceY) {
+
+			width = scaleFactor * mMapBitmap.getWidth();
+			height = scaleFactor * mMapBitmap.getHeight();
+
+			x = moveX - distanceX;
+			y = moveY - distanceY;
+
+			if (width <= getWidth()) {
+
+				if (x >= 0 && x <= getWidth() - width) {
+					moveX = x;
+				} else if (x < 0) {
+					moveX = 0;
+				} else if (x > getWidth() - width) {
+					moveX = getWidth() - width;
+				}
+
+			} else {
+				if (distanceX < 0) {
+
+					if (x <= 0) {
+						moveX = x;
+					} else {
+						moveX = 0;
+					}
+
+				} else if (distanceX > 0) {
+
+					if (x >= getWidth() - width) {
+						moveX = x;
+					} else {
+						moveX = getWidth() - width;
+					}
+
+				}
+
+			}
+
+			if (height <= getHeight()) {
+
+				if (y >= 0 && y <= getHeight() - height) {
+					moveY = y;
+				} else if (y < 0) {
+					moveY = 0;
+				} else if (y > getHeight() - height) {
+					moveY = getHeight() - height;
+				}
+
+			} else {
+				if (distanceY < 0) {
+
+					if (y <= 0) {
+						moveY = y;
+					} else {
+						moveY = 0;
+					}
+
+				} else if (distanceY > 0) {
+
+					if (y >= getHeight() - height) {
+						moveY = y;
+					} else {
+						moveY = getHeight() - height;
+					}
+
+				}
+
+			}
+
+			invalidate();
+			return true;
+		}
+
+		@Override
+		public boolean onSingleTapUp(MotionEvent e) {
+			dx = e.getX() - currentX;
+			dy = e.getY() - currentY;
+
+			if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
+				if (onClickGraphListener != null) {
+					onClickGraphListener.onClick(showLocation);
+				}
+			}
+			
+			isChoice = false;
+			return true;
+		}
+
 	}
 
-	@Override
-	protected void onDetachedFromWindow() {
-		super.onDetachedFromWindow();
-		if (mMapBitmap != null) {
-			mMapBitmap.recycle();
+	class ScaleListener extends
+			ScaleGestureDetector.SimpleOnScaleGestureListener {
+		@Override
+		public boolean onScale(ScaleGestureDetector detector) {
+			scaleFactor *= detector.getScaleFactor();
+			scaleFactor = (float) Math.max(0.5, Math.min(scaleFactor, 2f));
+			scale();
+			invalidate();
+			return true;
 		}
 	}
 
