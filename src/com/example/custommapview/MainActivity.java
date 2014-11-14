@@ -11,20 +11,15 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
-import android.widget.AdapterView;
-import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
-import android.widget.Toast;
-
-import com.example.custommapview.CustomMapView.OnClickGraphListener;
 
 public class MainActivity extends ActionBarActivity implements OnClickListener {
 
 	private Button mScaleUp;
 	private Button mScaleDown;
-	private CustomMapView mCustomMapView;
+	private CustomView mCustomMapView;
 	private GridView mGridView;
 	private ArrayList<GraphData> mData;
 
@@ -36,7 +31,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		mScaleUp.setOnClickListener(this);
 		mScaleDown = (Button) findViewById(R.id.scale_down);
 		mScaleDown.setOnClickListener(this);
-		mCustomMapView = (CustomMapView) findViewById(R.id.map_view);
+		mCustomMapView = (CustomView) findViewById(R.id.map_view);
 		mCustomMapView.bindData(mData = getData());
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
@@ -44,28 +39,6 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		Bitmap bitmap = BitmapFactory.decodeStream(getResources()
 				.openRawResource(R.raw.ic_test), new Rect(), options);
 		mCustomMapView.setMapBitmap(bitmap);
-		mCustomMapView.setOnClickGraphListener(new OnClickGraphListener() {
-
-			@Override
-			public void onClick(int position) {
-
-				Toast.makeText(getApplicationContext(),
-						"current click Item" + position, Toast.LENGTH_LONG)
-						.show();
-
-			}
-		});
-		mGridView = (GridView) findViewById(R.id.grid_view);
-		mGridView.setAdapter(new MyAdapter());
-		mGridView.setOnItemClickListener(new OnItemClickListener() {
-
-			@Override
-			public void onItemClick(AdapterView<?> parent, View view,
-					int position, long id) {
-				mCustomMapView.setShowLocation(position);
-
-			}
-		});
 
 	}
 
@@ -98,11 +71,13 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.scale_up:
-			mCustomMapView.scaleUp();
+			// mCustomMapView.scaleUp();
+			//mCustomMapView.refreshView();
 
 			break;
 		case R.id.scale_down:
-			mCustomMapView.scaleDown();
+			// mCustomMapView.scaleDown();
+			//mCustomMapView.refreshView();
 
 			break;
 		}
