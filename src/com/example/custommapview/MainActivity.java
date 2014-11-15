@@ -2,20 +2,25 @@ package com.example.custommapview;
 
 import java.util.ArrayList;
 
+import com.example.custommapview.CustomView.OnClickGraphListener;
+
+import android.app.Activity;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.os.Bundle;
-import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.GridView;
+import android.widget.Toast;
 
-public class MainActivity extends ActionBarActivity implements OnClickListener {
+public class MainActivity extends Activity implements OnClickListener {
 
 	private Button mScaleUp;
 	private Button mScaleDown;
@@ -33,6 +38,28 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		mScaleDown.setOnClickListener(this);
 		mCustomMapView = (CustomView) findViewById(R.id.map_view);
 		mCustomMapView.bindData(mData = getData());
+		mCustomMapView.setOnClickGraphListener(new OnClickGraphListener() {
+
+			@Override
+			public void onClick(int position) {
+
+				Toast.makeText(getApplicationContext(),
+						"current click Item" + position, Toast.LENGTH_LONG)
+						.show();
+
+			}
+		});
+		mGridView = (GridView)findViewById(R.id.grid_view);
+		mGridView.setAdapter(new MyAdapter());
+		mGridView.setOnItemClickListener(new OnItemClickListener() {
+
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view,
+					int position, long id) {
+				mCustomMapView.setShowLocation(position);
+
+			}
+		});
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
@@ -71,17 +98,13 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	public void onClick(View v) {
 		switch (v.getId()) {
 		case R.id.scale_up:
-			// mCustomMapView.scaleUp();
-			//mCustomMapView.refreshView();
-
+			mCustomMapView.scaleUp();
 			break;
 		case R.id.scale_down:
-			// mCustomMapView.scaleDown();
-			//mCustomMapView.refreshView();
-
+			mCustomMapView.scaleDown();
 			break;
-		}
 
+		}
 	}
 
 	class MyAdapter extends BaseAdapter {

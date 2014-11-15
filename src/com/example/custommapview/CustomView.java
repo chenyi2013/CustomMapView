@@ -2,9 +2,6 @@ package com.example.custommapview;
 
 import java.util.ArrayList;
 
-import com.example.custommapview.CustomMapView.MyGestureListener;
-import com.example.custommapview.CustomMapView.ScaleListener;
-
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.annotation.SuppressLint;
@@ -16,10 +13,6 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Paint.Style;
-import android.os.Handler;
-import android.os.HandlerThread;
-import android.os.Looper;
-import android.os.Message;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
 import android.util.Property;
@@ -32,15 +25,10 @@ import android.view.SurfaceView;
 
 public class CustomView extends SurfaceView implements Callback {
 
-	private static final int DRAW_MAP = 1;
-	private static final int SCALE_MAP = 2;
+	private static final Object touchLock = new Object();
 
 	private SurfaceHolder mHolder;
-	private HandlerThread mDrawThread;
-
-	private volatile Looper mLooper;
-	private volatile CustomHandler mHandler;
-
+	private DrawThread mDrawThread;
 	private Canvas mCanvas = null;
 	private Paint mCirclePaint;
 
@@ -106,15 +94,18 @@ public class CustomView extends SurfaceView implements Callback {
 
 		@Override
 		public Float get(CustomView object) {
-			return object.scaleFactor;
+			synchronized (touchLock) {
+				return object.scaleFactor;
+			}
 		}
 
 		@Override
 		public void set(CustomView object, Float value) {
-			object.scaleFactor = value;
-			scale();
-			invalidate();
-		};
+			synchronized (touchLock) {
+				object.scaleFactor = value;
+				scale();
+			}
+		}
 	};
 
 	private void scale() {
@@ -124,6 +115,24 @@ public class CustomView extends SurfaceView implements Callback {
 		moveY = moveY
 				- ((scaleFactor - previousScaleFactor) * mMapBitmap.getHeight())
 				/ 2;
+		refreshMap();
+	}
+
+	public void scaleUp() {
+		if (scaleFactor < 2 && scaleFactor + 0.5f <= 2) {
+			startAnimator(scaleFactor, scaleFactor + 0.5f);
+		} else if (scaleFactor < 2 && scaleFactor + 0.5f > 2) {
+			startAnimator(scaleFactor, 2);
+		}
+	}
+
+	public void scaleDown() {
+		if (scaleFactor > 0.5f && scaleFactor - 0.5f >= 0.5) {
+			startAnimator(scaleFactor, scaleFactor - 0.5f);
+		} else if (scaleFactor > 0.5f && scaleFactor - 0.5f < 0.5) {
+			startAnimator(scaleFactor, 0.5f);
+		}
+
 	}
 
 	@SuppressLint("NewApi")
@@ -156,36 +165,12 @@ public class CustomView extends SurfaceView implements Callback {
 	public void bindData(ArrayList<GraphData> datas) {
 
 		this.datas = datas;
-		invalidate();
+		refreshMap();
 	}
 
 	public void setShowLocation(int location) {
 		showLocation = location;
-		invalidate();
-	}
-
-	private final class CustomHandler extends Handler {
-		public CustomHandler(Looper looper) {
-			super(looper);
-		}
-
-		@Override
-		public void handleMessage(Message msg) {
-
-			switch (msg.what) {
-			case DRAW_MAP:
-				drawMap();
-				break;
-			case SCALE_MAP:
-				scaleFactor *= (float) msg.obj;
-				scaleFactor = (float) Math.max(0.5, Math.min(scaleFactor, 2f));
-				scale();
-				drawMap();
-				break;
-			default:
-				break;
-			}
-		}
+		refreshMap();
 	}
 
 	public Bitmap getMapBitmap() {
@@ -194,7 +179,7 @@ public class CustomView extends SurfaceView implements Callback {
 
 	public void setMapBitmap(Bitmap mMapBitmap) {
 		this.mMapBitmap = mMapBitmap;
-		refreshView(DRAW_MAP);
+		refreshMap();
 	}
 
 	public CustomView(Context context) {
@@ -233,9 +218,15 @@ public class CustomView extends SurfaceView implements Callback {
 		mCirclePaint.setColor(0xff000000);
 	}
 
+	private void refreshMap() {
+		if (mDrawThread != null) {
+			mDrawThread.setDirtyFlag(true);
+		}
+	}
+
 	private void drawMap() {
 		mCanvas = mHolder.lockCanvas();
-		mCanvas.drawColor(Color.BLACK);
+		mCanvas.drawColor(Color.WHITE);
 		GraphData data = null;
 
 		if (mMapBitmap == null) {
@@ -288,12 +279,6 @@ public class CustomView extends SurfaceView implements Callback {
 		mHolder.unlockCanvasAndPost(mCanvas);
 	}
 
-	public void refreshView(int what) {
-		if (mHandler != null) {
-			mHandler.sendEmptyMessage(what);
-		}
-	}
-
 	@SuppressLint("ClickableViewAccessibility")
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
@@ -314,13 +299,9 @@ public class CustomView extends SurfaceView implements Callback {
 	public void surfaceCreated(SurfaceHolder holder) {
 
 		if (mDrawThread == null) {
-			mDrawThread = new HandlerThread("CustomViewThread");
+			mDrawThread = new DrawThread(mHolder);
 			mDrawThread.start();
-			mLooper = mDrawThread.getLooper();
-			mHandler = new CustomHandler(mLooper);
 		}
-
-		refreshView(DRAW_MAP);
 
 	}
 
@@ -332,6 +313,11 @@ public class CustomView extends SurfaceView implements Callback {
 
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
+
+		if (mDrawThread != null) {
+			mDrawThread.setRunFlag(false);
+			mDrawThread = null;
+		}
 
 	}
 
@@ -352,27 +338,31 @@ public class CustomView extends SurfaceView implements Callback {
 		@Override
 		public boolean onDown(MotionEvent e) {
 
-			currentX = e.getX();
-			currentY = e.getY();
+			synchronized (touchLock) {
+				currentX = e.getX();
+				currentY = e.getY();
 
-			if (datas != null) {
+				if (datas != null) {
 
-				data = datas.get(showLocation);
-				Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
-						R.drawable.ic_launcher);
-				if (moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2 <= currentX
-						&& moveX + scaleFactor * data.getX()
-								+ bitmap.getWidth() / 2 >= currentX
-						&& moveY + scaleFactor * data.getY()
-								- bitmap.getHeight() - lineHeight <= currentY
-						&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
+					data = datas.get(showLocation);
+					Bitmap bitmap = BitmapFactory.decodeResource(
+							getResources(), R.drawable.ic_launcher);
+					if (moveX + scaleFactor * data.getX() - bitmap.getWidth()
+							/ 2 <= currentX
+							&& moveX + scaleFactor * data.getX()
+									+ bitmap.getWidth() / 2 >= currentX
+							&& moveY + scaleFactor * data.getY()
+									- bitmap.getHeight() - lineHeight <= currentY
+							&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
 
-					isChoice = true;
+						isChoice = true;
+
+					}
+					bitmap.recycle();
 
 				}
-				bitmap.recycle();
-
 			}
+
 			return true;
 		}
 
@@ -380,91 +370,96 @@ public class CustomView extends SurfaceView implements Callback {
 		public boolean onScroll(MotionEvent e1, MotionEvent e2,
 				float distanceX, float distanceY) {
 
-			width = scaleFactor * mMapBitmap.getWidth();
-			height = scaleFactor * mMapBitmap.getHeight();
+			synchronized (touchLock) {
+				width = scaleFactor * mMapBitmap.getWidth();
+				height = scaleFactor * mMapBitmap.getHeight();
 
-			x = moveX - distanceX;
-			y = moveY - distanceY;
+				x = moveX - distanceX;
+				y = moveY - distanceY;
 
-			if (width <= getWidth()) {
+				if (width <= getWidth()) {
 
-				if (x >= 0 && x <= getWidth() - width) {
-					moveX = x;
-				} else if (x < 0) {
-					moveX = 0;
-				} else if (x > getWidth() - width) {
-					moveX = getWidth() - width;
-				}
-
-			} else {
-				if (distanceX < 0) {
-
-					if (x <= 0) {
+					if (x >= 0 && x <= getWidth() - width) {
 						moveX = x;
-					} else {
+					} else if (x < 0) {
 						moveX = 0;
-					}
-
-				} else if (distanceX > 0) {
-
-					if (x >= getWidth() - width) {
-						moveX = x;
-					} else {
+					} else if (x > getWidth() - width) {
 						moveX = getWidth() - width;
 					}
 
-				}
+				} else {
+					if (distanceX < 0) {
 
-			}
+						if (x <= 0) {
+							moveX = x;
+						} else {
+							moveX = 0;
+						}
 
-			if (height <= getHeight()) {
+					} else if (distanceX > 0) {
 
-				if (y >= 0 && y <= getHeight() - height) {
-					moveY = y;
-				} else if (y < 0) {
-					moveY = 0;
-				} else if (y > getHeight() - height) {
-					moveY = getHeight() - height;
-				}
+						if (x >= getWidth() - width) {
+							moveX = x;
+						} else {
+							moveX = getWidth() - width;
+						}
 
-			} else {
-				if (distanceY < 0) {
-
-					if (y <= 0) {
-						moveY = y;
-					} else {
-						moveY = 0;
 					}
 
-				} else if (distanceY > 0) {
+				}
 
-					if (y >= getHeight() - height) {
+				if (height <= getHeight()) {
+
+					if (y >= 0 && y <= getHeight() - height) {
 						moveY = y;
-					} else {
+					} else if (y < 0) {
+						moveY = 0;
+					} else if (y > getHeight() - height) {
 						moveY = getHeight() - height;
 					}
 
+				} else {
+					if (distanceY < 0) {
+
+						if (y <= 0) {
+							moveY = y;
+						} else {
+							moveY = 0;
+						}
+
+					} else if (distanceY > 0) {
+
+						if (y >= getHeight() - height) {
+							moveY = y;
+						} else {
+							moveY = getHeight() - height;
+						}
+
+					}
+
 				}
+				refreshMap();
 
 			}
-
-			mHandler.removeMessages(DRAW_MAP);
-			refreshView(DRAW_MAP);
 			return true;
 		}
 
 		@Override
 		public boolean onSingleTapUp(MotionEvent e) {
-			dx = e.getX() - currentX;
-			dy = e.getY() - currentY;
+			synchronized (touchLock) {
+				dx = e.getX() - currentX;
+				dy = e.getY() - currentY;
 
-			if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
-				if (onClickGraphListener != null) {
-					onClickGraphListener.onClick(showLocation);
+				if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
+					if (onClickGraphListener != null) {
+						onClickGraphListener.onClick(showLocation);
+					}
 				}
+
+				isChoice = false;
+				refreshMap();
 			}
 
-			isChoice = false;
 			return true;
 		}
 
@@ -475,14 +470,52 @@ public class CustomView extends SurfaceView implements Callback {
 		@Override
 		public boolean onScale(ScaleGestureDetector detector) {
 
-			mHandler.removeMessages(SCALE_MAP);
-			Message msg = mHandler.obtainMessage();
-			msg.obj = detector.getScaleFactor();
-			msg.what = SCALE_MAP;
-			msg.sendToTarget();
-			// refreshView(SCALE_MAP);
+			synchronized (touchLock) {
 
+				scaleFactor *= detector.getScaleFactor();
+				scaleFactor = (float) Math.max(0.5, Math.min(scaleFactor, 2f));
+				scale();
+			}
 			return true;
+		}
+	}
+
+	class DrawThread extends Thread {
+		private boolean isRun = true;
+		private boolean isDirty = true;
+
+		public DrawThread(SurfaceHolder holder) {
+			mHolder = holder;
+		}
+
+		public void setRunFlag(boolean bool) {
+			isRun = bool;
+		}
+
+		public void setDirtyFlag(boolean bool) {
+			isDirty = bool;
+		}
+
+		@Override
+		public void run() {
+			super.run();
+
+			while (isRun) {
+				if (!isDirty) {
+					continue;
+				}
+
+				synchronized (mHolder) {
+
+					synchronized (touchLock) {
+
+						drawMap();
+						isDirty = false;
+
+					}
+
+				}
+			}
 		}
 	}
 
