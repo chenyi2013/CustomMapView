@@ -53,12 +53,13 @@ public class CustomMapView extends View {
 	/**
 	 * 地图的前一次缩放因子
 	 */
-	private float previousScaleFactor = 1f;
+	private float previousScaleFactor = -1f;
 
 	/**
 	 * 当前在地图上标出的标签
 	 */
 	private int showLocation = 0;
+
 	private AnimatorSet mAnimatorSet;
 
 	/**
@@ -87,6 +88,13 @@ public class CustomMapView extends View {
 
 	private int iconBgWidth = convertDpToPx(200);
 	private int iconBgHeight = convertDpToPx(250);
+
+	Bitmap resizeBmp = null;
+	Bitmap iconBg = null;
+	Bitmap iconBgNew = null;
+	Bitmap icon = null;
+	Bitmap iconNew = null;
+	int location = -1;
 
 	private GestureDetectorCompat mDetector;
 	private ScaleGestureDetector scaleGestureDetector;
@@ -200,6 +208,11 @@ public class CustomMapView extends View {
 		scaleGestureDetector = new ScaleGestureDetector(getContext(),
 				new ScaleListener());
 
+		iconBg = BitmapFactory.decodeResource(getResources(),
+				R.drawable.icon_bg);
+		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
+				iconBgHeight, true);
+
 	}
 
 	public void scaleUp() {
@@ -267,15 +280,20 @@ public class CustomMapView extends View {
 			isFirst = false;
 		}
 
-		Matrix matrix = new Matrix();
-		matrix.postScale(scaleFactor, scaleFactor);
-		Bitmap resizeBmp = Bitmap.createBitmap(mMapBitmap, 0, 0,
-				mMapBitmap.getWidth(), mMapBitmap.getHeight(), matrix, true);
-		canvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
+		if (scaleFactor != previousScaleFactor) {
 
-		if (!mMapBitmap.equals(resizeBmp)) {
-			resizeBmp.recycle();
+			if (resizeBmp != null && !mMapBitmap.equals(resizeBmp)) {
+				resizeBmp.recycle();
+			}
+
+			Matrix matrix = new Matrix();
+			matrix.postScale(scaleFactor, scaleFactor);
+			resizeBmp = Bitmap
+					.createBitmap(mMapBitmap, 0, 0, mMapBitmap.getWidth(),
+							mMapBitmap.getHeight(), matrix, true);
 		}
+
+		canvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
 
 		if (datas == null) {
 			return;
@@ -288,27 +306,32 @@ public class CustomMapView extends View {
 		}
 
 		data = datas.get(showLocation);
-		Bitmap iconBg = null;
-		Bitmap iconBgNew = null;
+
 		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
 				* data.getY(), moveX + scaleFactor * data.getX(), moveY
 				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-		iconBg = BitmapFactory.decodeResource(getResources(),
-				R.drawable.icon_bg);
-		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
-				iconBgHeight, true);
 
 		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
 				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
 				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
 
-		// ___________________________________________________________________________
-		Bitmap icon = null;
-		Bitmap iconNew = null;
-		icon = BitmapFactory.decodeResource(getResources(), //
-				R.drawable.aa); //
-		iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
-				convertDpToPx(120), true);
+		if (showLocation != location) {
+
+			if (icon != null) {
+				icon.recycle();
+			}
+
+			icon = BitmapFactory.decodeResource(getResources(), //
+					R.drawable.aa);
+
+			if (iconNew != null && !icon.equals(iconNew)) {
+				iconNew.recycle();
+			}
+			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
+					convertDpToPx(120), true);
+
+		}
+
 		canvas.drawBitmap(iconNew, //
 				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
 				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
@@ -324,12 +347,7 @@ public class CustomMapView extends View {
 						+ iconNew.getHeight()
 						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
 						+ convertDpToPx(20), paint);
-		icon.recycle();
-		iconNew.recycle(); //
-		iconBg.recycle();
-		iconBgNew.recycle();
-		// ____________________________________________________________________________
-
+		location = showLocation;
 		previousScaleFactor = scaleFactor;
 	}
 
@@ -346,6 +364,11 @@ public class CustomMapView extends View {
 		super.onDetachedFromWindow();
 		if (mMapBitmap != null) {
 			mMapBitmap.recycle();
+			resizeBmp.recycle();
+			iconBg.recycle();
+			iconBgNew.recycle();
+			icon.recycle();
+			iconNew.recycle();
 		}
 	}
 
@@ -372,23 +395,17 @@ public class CustomMapView extends View {
 			if (datas != null) {
 
 				data = datas.get(showLocation);
-				Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
-						R.drawable.icon_bg);
-				Bitmap iconBg = Bitmap.createScaledBitmap(bitmap, iconBgWidth,
-						iconBgHeight, true);
-				if (moveX + scaleFactor * data.getX() - iconBg.getWidth() / 2 <= currentX
+				if (moveX + scaleFactor * data.getX() - iconBgNew.getWidth()
+						/ 2 <= currentX
 						&& moveX + scaleFactor * data.getX()
-								+ iconBg.getWidth() / 2 >= currentX
+								+ iconBgNew.getWidth() / 2 >= currentX
 						&& moveY + scaleFactor * data.getY()
-								- iconBg.getHeight() - lineHeight <= currentY
+								- iconBgNew.getHeight() - lineHeight <= currentY
 						&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
 
 					isChoice = true;
 
 				}
-				bitmap.recycle();
-				iconBg.recycle();
-
 			}
 			return true;
 		}
