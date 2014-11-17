@@ -10,13 +10,17 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
+import android.graphics.Rect;
 import android.os.Build;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
 import android.util.Property;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -60,7 +64,7 @@ public class CustomMapView extends View {
 	/**
 	 * 当前在地图上标出的标签底部竖线的高度
 	 */
-	private float lineHeight = 20;
+	private float lineHeight = 0;
 
 	/**
 	 * 用于判断是否是初次设置地图图片
@@ -71,7 +75,7 @@ public class CustomMapView extends View {
 	 * 设置的地图图片
 	 */
 	private Bitmap mMapBitmap;
-	
+
 	/**
 	 * 手指在屏幕上按下的点在X轴方向的座标
 	 */
@@ -80,10 +84,12 @@ public class CustomMapView extends View {
 	 * 手指在屏幕上按下的点在Y轴方向的座标
 	 */
 	private float currentY = 0;
-	
+
+	private int iconBgWidth = convertDpToPx(200);
+	private int iconBgHeight = convertDpToPx(250);
+
 	private GestureDetectorCompat mDetector;
 	private ScaleGestureDetector scaleGestureDetector;
-
 
 	private ArrayList<GraphData> datas;
 
@@ -154,11 +160,12 @@ public class CustomMapView extends View {
 		this.datas = datas;
 		invalidate();
 	}
+
 	public void setShowLocation(int location) {
 		showLocation = location;
 		invalidate();
 	}
-	
+
 	public CustomMapView(Context context) {
 		super(context);
 		init(context);
@@ -176,7 +183,6 @@ public class CustomMapView extends View {
 		init(context);
 
 	}
-	
 
 	private void initPaint() {
 		mCirclePaint = new Paint();
@@ -196,8 +202,6 @@ public class CustomMapView extends View {
 
 	}
 
-	
-
 	public void scaleUp() {
 		if (scaleFactor < 2 && scaleFactor + 0.5f <= 2) {
 			startAnimator(scaleFactor, scaleFactor + 0.5f);
@@ -215,7 +219,34 @@ public class CustomMapView extends View {
 
 	}
 
+	/**
+	 * 得到字体高度
+	 * 
+	 * @param fontSize
+	 * @return
+	 */
+	private int getFontHeight(float fontSize) {
+		Paint paint = new Paint();
+		paint.setTextSize(fontSize);
+		Rect rect = new Rect();
+		paint.getTextBounds("0000", 0, "0000".length(), rect);
+		return rect.height();
 
+	}
+
+	private int convertDpToPx(float dp) {
+
+		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
+				getResources().getDisplayMetrics());
+
+	}
+
+	private float convertSpToPx(float sp) {
+
+		return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp,
+				getResources().getDisplayMetrics());
+
+	}
 
 	@SuppressLint({ "DrawAllocation", "NewApi" })
 	@Override
@@ -257,18 +288,47 @@ public class CustomMapView extends View {
 		}
 
 		data = datas.get(showLocation);
-		Bitmap bitmap = null;
+		Bitmap iconBg = null;
+		Bitmap iconBgNew = null;
 		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
 				* data.getY(), moveX + scaleFactor * data.getX(), moveY
 				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-		bitmap = BitmapFactory.decodeResource(getResources(),
-				R.drawable.ic_launcher);
+		iconBg = BitmapFactory.decodeResource(getResources(),
+				R.drawable.icon_bg);
+		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
+				iconBgHeight, true);
 
-		canvas.drawBitmap(bitmap,
-				moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2,
-				moveY + scaleFactor * data.getY() - bitmap.getHeight()
-						- lineHeight, mCirclePaint);
-		bitmap.recycle();
+		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
+				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
+				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
+
+		// ___________________________________________________________________________
+		Bitmap icon = null;
+		Bitmap iconNew = null;
+		icon = BitmapFactory.decodeResource(getResources(), //
+				R.drawable.aa); //
+		iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
+				convertDpToPx(120), true);
+		canvas.drawBitmap(iconNew, //
+				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ convertDpToPx(30) //
+						- lineHeight, mCirclePaint); //
+
+		Paint paint = new Paint();
+		paint.setTextSize(convertSpToPx(24));
+		paint.setColor(Color.WHITE);
+		paint.setTextAlign(Align.CENTER);
+		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ iconNew.getHeight()
+						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
+						+ convertDpToPx(20), paint);
+		icon.recycle();
+		iconNew.recycle(); //
+		iconBg.recycle();
+		iconBgNew.recycle();
+		// ____________________________________________________________________________
 
 		previousScaleFactor = scaleFactor;
 	}
@@ -277,8 +337,8 @@ public class CustomMapView extends View {
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
 		boolean retVal = scaleGestureDetector.onTouchEvent(event);
-	    retVal = mDetector.onTouchEvent(event) || retVal;
-	    return retVal || super.onTouchEvent(event);
+		retVal = mDetector.onTouchEvent(event) || retVal;
+		return retVal || super.onTouchEvent(event);
 	}
 
 	@Override
@@ -290,41 +350,44 @@ public class CustomMapView extends View {
 	}
 
 	class MyGestureListener extends GestureDetector.SimpleOnGestureListener {
-		
+
 		private float x;
 		private float y;
-		
+
 		private float dx;
 		private float dy;
-		
+
 		private float width;
 		private float height;
-		
+
 		private GraphData data = null;
 		private boolean isChoice = false;
-		
+
 		@Override
 		public boolean onDown(MotionEvent e) {
-			
+
 			currentX = e.getX();
 			currentY = e.getY();
-			
+
 			if (datas != null) {
 
 				data = datas.get(showLocation);
 				Bitmap bitmap = BitmapFactory.decodeResource(getResources(),
-						R.drawable.ic_launcher);
-				if (moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2 <= currentX
+						R.drawable.icon_bg);
+				Bitmap iconBg = Bitmap.createScaledBitmap(bitmap, iconBgWidth,
+						iconBgHeight, true);
+				if (moveX + scaleFactor * data.getX() - iconBg.getWidth() / 2 <= currentX
 						&& moveX + scaleFactor * data.getX()
-								+ bitmap.getWidth() / 2 >= currentX
+								+ iconBg.getWidth() / 2 >= currentX
 						&& moveY + scaleFactor * data.getY()
-								- bitmap.getHeight() - lineHeight <= currentY
+								- iconBg.getHeight() - lineHeight <= currentY
 						&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
 
 					isChoice = true;
 
 				}
 				bitmap.recycle();
+				iconBg.recycle();
 
 			}
 			return true;
@@ -411,12 +474,13 @@ public class CustomMapView extends View {
 			dx = e.getX() - currentX;
 			dy = e.getY() - currentY;
 
-			if (isChoice && Math.sqrt(dx) < 5 && Math.sqrt(dy) < 5) {
+			if (isChoice && Math.sqrt(dx) < convertDpToPx(5)
+					&& Math.sqrt(dy) < convertDpToPx(5)) {
 				if (onClickGraphListener != null) {
 					onClickGraphListener.onClick(showLocation);
 				}
 			}
-			
+
 			isChoice = false;
 			return true;
 		}
