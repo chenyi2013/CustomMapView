@@ -86,10 +86,12 @@ public class CustomMapView extends View {
 	 */
 	private float currentY = 0;
 
+	Matrix matrix = new Matrix();
+	float[] m = new float[9];
+
 	private int iconBgWidth = convertDpToPx(200);
 	private int iconBgHeight = convertDpToPx(250);
 
-	Bitmap resizeBmp = null;
 	Bitmap iconBg = null;
 	Bitmap iconBgNew = null;
 	Bitmap icon = null;
@@ -279,21 +281,15 @@ public class CustomMapView extends View {
 
 			isFirst = false;
 		}
-
-		if (scaleFactor != previousScaleFactor) {
-
-			if (resizeBmp != null && !mMapBitmap.equals(resizeBmp)) {
-				resizeBmp.recycle();
-			}
-
-			Matrix matrix = new Matrix();
-			matrix.postScale(scaleFactor, scaleFactor);
-			resizeBmp = Bitmap
-					.createBitmap(mMapBitmap, 0, 0, mMapBitmap.getWidth(),
-							mMapBitmap.getHeight(), matrix, true);
-		}
-
-		canvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
+		
+		matrix.getValues(m);
+		m[Matrix.MTRANS_X] = moveX;
+		m[Matrix.MTRANS_Y] = moveY;
+		m[Matrix.MSCALE_X] = scaleFactor;
+		m[Matrix.MSCALE_Y] = scaleFactor;
+		matrix.setValues(m);
+		
+		canvas.drawBitmap(mMapBitmap, matrix, mCirclePaint);
 
 		if (datas == null) {
 			return;
@@ -364,7 +360,6 @@ public class CustomMapView extends View {
 		super.onDetachedFromWindow();
 		if (mMapBitmap != null) {
 			mMapBitmap.recycle();
-			resizeBmp.recycle();
 			iconBg.recycle();
 			iconBgNew.recycle();
 			icon.recycle();
