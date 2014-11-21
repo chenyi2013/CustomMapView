@@ -12,10 +12,13 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
+import android.graphics.Rect;
+import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
 import android.util.Property;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -80,6 +83,18 @@ public class CustomView extends SurfaceView implements Callback {
 	 * 手指在屏幕上按下的点在Y轴方向的座标
 	 */
 	private float currentY = 0;
+	
+	private int iconBgWidth = convertDpToPx(200);
+	private int iconBgHeight = convertDpToPx(250);
+	
+	Matrix matrix = new Matrix();
+	float[] m = new float[9];
+	
+	Bitmap iconBg = null;
+	Bitmap iconBgNew = null;
+	Bitmap icon = null;
+	Bitmap iconNew = null;
+	int location = -1;
 
 	private GestureDetectorCompat mDetector;
 	private ScaleGestureDetector scaleGestureDetector;
@@ -206,6 +221,11 @@ public class CustomView extends SurfaceView implements Callback {
 				new MyGestureListener());
 		scaleGestureDetector = new ScaleGestureDetector(getContext(),
 				new ScaleListener());
+		
+		iconBg = BitmapFactory.decodeResource(getResources(),
+				R.drawable.icon_bg);
+		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
+				iconBgHeight, true);
 
 	}
 
@@ -222,6 +242,36 @@ public class CustomView extends SurfaceView implements Callback {
 		if (mDrawThread != null) {
 			mDrawThread.setDirtyFlag(true);
 		}
+	}
+	
+	
+	private int convertDpToPx(float dp) {
+
+		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
+				getResources().getDisplayMetrics());
+
+	}
+
+	private float convertSpToPx(float sp) {
+
+		return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp,
+				getResources().getDisplayMetrics());
+
+	}
+	
+	/**
+	 * 得到字体高度
+	 * 
+	 * @param fontSize
+	 * @return
+	 */
+	private int getFontHeight(float fontSize) {
+		Paint paint = new Paint();
+		paint.setTextSize(fontSize);
+		Rect rect = new Rect();
+		paint.getTextBounds("0000", 0, "0000".length(), rect);
+		return rect.height();
+
 	}
 
 	private void drawMap() {
@@ -240,16 +290,15 @@ public class CustomView extends SurfaceView implements Callback {
 
 			isFirst = false;
 		}
-
-		Matrix matrix = new Matrix();
-		matrix.postScale(scaleFactor, scaleFactor);
-		Bitmap resizeBmp = Bitmap.createBitmap(mMapBitmap, 0, 0,
-				mMapBitmap.getWidth(), mMapBitmap.getHeight(), matrix, true);
-		mCanvas.drawBitmap(resizeBmp, moveX, moveY, mCirclePaint);
-
-		if (!mMapBitmap.equals(resizeBmp)) {
-			resizeBmp.recycle();
-		}
+		
+		matrix.getValues(m);
+		m[Matrix.MTRANS_X] = moveX;
+		m[Matrix.MTRANS_Y] = moveY;
+		m[Matrix.MSCALE_X] = scaleFactor;
+		m[Matrix.MSCALE_Y] = scaleFactor;
+		matrix.setValues(m);
+		
+		mCanvas.drawBitmap(mMapBitmap, matrix, mCirclePaint);
 
 		if (datas == null) {
 			return;
@@ -262,19 +311,48 @@ public class CustomView extends SurfaceView implements Callback {
 		}
 
 		data = datas.get(showLocation);
-		Bitmap bitmap = null;
+
 		mCanvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
 				* data.getY(), moveX + scaleFactor * data.getX(), moveY
 				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-		bitmap = BitmapFactory.decodeResource(getResources(),
-				R.drawable.ic_launcher);
 
-		mCanvas.drawBitmap(bitmap,
-				moveX + scaleFactor * data.getX() - bitmap.getWidth() / 2,
-				moveY + scaleFactor * data.getY() - bitmap.getHeight()
-						- lineHeight, mCirclePaint);
-		bitmap.recycle();
+		mCanvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
+				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
+				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
 
+		if (showLocation != location) {
+
+			if (icon != null) {
+				icon.recycle();
+			}
+
+			icon = BitmapFactory.decodeResource(getResources(), //
+					R.drawable.aa);
+
+			if (iconNew != null && !icon.equals(iconNew)) {
+				iconNew.recycle();
+			}
+			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
+					convertDpToPx(120), true);
+
+		}
+
+		mCanvas.drawBitmap(iconNew, //
+				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ convertDpToPx(30) //
+						- lineHeight, mCirclePaint); //
+
+		Paint paint = new Paint();
+		paint.setTextSize(convertSpToPx(24));
+		paint.setColor(Color.WHITE);
+		paint.setTextAlign(Align.CENTER);
+		mCanvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ iconNew.getHeight()
+						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
+						+ convertDpToPx(20), paint);
+		location = showLocation;
 		previousScaleFactor = scaleFactor;
 		mHolder.unlockCanvasAndPost(mCanvas);
 	}
@@ -292,6 +370,10 @@ public class CustomView extends SurfaceView implements Callback {
 		super.onDetachedFromWindow();
 		if (mMapBitmap != null) {
 			mMapBitmap.recycle();
+			iconBg.recycle();
+			iconBgNew.recycle();
+			icon.recycle();
+			iconNew.recycle();
 		}
 	}
 
@@ -376,6 +458,7 @@ public class CustomView extends SurfaceView implements Callback {
 
 				x = moveX - distanceX;
 				y = moveY - distanceY;
+			
 
 				if (width <= getWidth()) {
 
