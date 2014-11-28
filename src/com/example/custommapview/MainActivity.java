@@ -42,7 +42,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
 		Bitmap bitmap = BitmapFactory.decodeStream(getResources()
-				.openRawResource(R.raw.ic_test), new Rect(), options);
+				.openRawResource(R.raw.aaa), new Rect(), options);
 		mCustomMapView.setMapBitmap(bitmap);
 		mCustomMapView.setOnClickGraphListener(new OnClickGraphListener() {
 

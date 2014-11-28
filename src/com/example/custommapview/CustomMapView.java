@@ -158,6 +158,7 @@ public class CustomMapView extends View {
 
 	public void setMapBitmap(Bitmap mMapBitmap) {
 		this.mMapBitmap = mMapBitmap;
+
 		invalidate();
 	}
 
@@ -276,19 +277,23 @@ public class CustomMapView extends View {
 
 		if (isFirst) {
 
+			float scaleHeight = getHeight() / ((float) mMapBitmap.getHeight());
+			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
+			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
+
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
 			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
 
 			isFirst = false;
 		}
-		
+
 		matrix.getValues(m);
 		m[Matrix.MTRANS_X] = moveX;
 		m[Matrix.MTRANS_Y] = moveY;
 		m[Matrix.MSCALE_X] = scaleFactor;
 		m[Matrix.MSCALE_Y] = scaleFactor;
 		matrix.setValues(m);
-		
+
 		canvas.drawBitmap(mMapBitmap, matrix, mCirclePaint);
 
 		if (datas == null) {
@@ -303,46 +308,46 @@ public class CustomMapView extends View {
 
 		data = datas.get(showLocation);
 
-		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
-				* data.getY(), moveX + scaleFactor * data.getX(), moveY
-				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
+//		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
+//				* data.getY(), moveX + scaleFactor * data.getX(), moveY
+//				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
+//
+//		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
+//				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
+//				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
+//
+//		if (showLocation != location) {
+//
+//			if (icon != null) {
+//				icon.recycle();
+//			}
+//
+//			icon = BitmapFactory.decodeResource(getResources(), //
+//					R.drawable.aa);
+//
+//			if (iconNew != null && !icon.equals(iconNew)) {
+//				iconNew.recycle();
+//			}
+//			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
+//					convertDpToPx(120), true);
+//
+//		}
 
-		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
-				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
-				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
-
-		if (showLocation != location) {
-
-			if (icon != null) {
-				icon.recycle();
-			}
-
-			icon = BitmapFactory.decodeResource(getResources(), //
-					R.drawable.aa);
-
-			if (iconNew != null && !icon.equals(iconNew)) {
-				iconNew.recycle();
-			}
-			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
-					convertDpToPx(120), true);
-
-		}
-
-		canvas.drawBitmap(iconNew, //
-				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
-				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-						+ convertDpToPx(30) //
-						- lineHeight, mCirclePaint); //
-
-		Paint paint = new Paint();
-		paint.setTextSize(convertSpToPx(24));
-		paint.setColor(Color.WHITE);
-		paint.setTextAlign(Align.CENTER);
-		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
-				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-						+ iconNew.getHeight()
-						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
-						+ convertDpToPx(20), paint);
+//		canvas.drawBitmap(iconNew, //
+//				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
+//				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+//						+ convertDpToPx(30) //
+//						- lineHeight, mCirclePaint); //
+//
+//		Paint paint = new Paint();
+//		paint.setTextSize(convertSpToPx(24));
+//		paint.setColor(Color.WHITE);
+//		paint.setTextAlign(Align.CENTER);
+//		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
+//				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+//						+ iconNew.getHeight()
+//						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
+//						+ convertDpToPx(20), paint);
 		location = showLocation;
 		previousScaleFactor = scaleFactor;
 	}
