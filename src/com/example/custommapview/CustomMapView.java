@@ -308,46 +308,46 @@ public class CustomMapView extends View {
 
 		data = datas.get(showLocation);
 
-//		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
-//				* data.getY(), moveX + scaleFactor * data.getX(), moveY
-//				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-//
-//		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
-//				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
-//				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
-//
-//		if (showLocation != location) {
-//
-//			if (icon != null) {
-//				icon.recycle();
-//			}
-//
-//			icon = BitmapFactory.decodeResource(getResources(), //
-//					R.drawable.aa);
-//
-//			if (iconNew != null && !icon.equals(iconNew)) {
-//				iconNew.recycle();
-//			}
-//			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
-//					convertDpToPx(120), true);
-//
-//		}
+		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
+				* data.getY(), moveX + scaleFactor * data.getX(), moveY
+				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
 
-//		canvas.drawBitmap(iconNew, //
-//				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
-//				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-//						+ convertDpToPx(30) //
-//						- lineHeight, mCirclePaint); //
-//
-//		Paint paint = new Paint();
-//		paint.setTextSize(convertSpToPx(24));
-//		paint.setColor(Color.WHITE);
-//		paint.setTextAlign(Align.CENTER);
-//		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
-//				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-//						+ iconNew.getHeight()
-//						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
-//						+ convertDpToPx(20), paint);
+		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
+				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
+				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
+
+		if (showLocation != location) {
+
+			if (icon != null) {
+				icon.recycle();
+			}
+
+			icon = BitmapFactory.decodeResource(getResources(), //
+					R.drawable.aa);
+
+			if (iconNew != null && !icon.equals(iconNew)) {
+				iconNew.recycle();
+			}
+			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
+					convertDpToPx(120), true);
+
+		}
+
+		canvas.drawBitmap(iconNew, //
+				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ convertDpToPx(30) //
+						- lineHeight, mCirclePaint); //
+
+		Paint paint = new Paint();
+		paint.setTextSize(convertSpToPx(24));
+		paint.setColor(Color.WHITE);
+		paint.setTextAlign(Align.CENTER);
+		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
+				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
+						+ iconNew.getHeight()
+						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
+						+ convertDpToPx(20), paint);
 		location = showLocation;
 		previousScaleFactor = scaleFactor;
 	}
@@ -420,31 +420,43 @@ public class CustomMapView extends View {
 			x = moveX - distanceX;
 			y = moveY - distanceY;
 
-			if (width <= getWidth()) {
+			float ih = -1;
 
-				if (x >= 0 && x <= getWidth() - width) {
+			if (data != null) {
+				ih = data.getY() * scaleFactor;
+			} else {
+				ih = height / 2;
+			}
+
+			if (width < getWidth()) {
+
+				if (x >= -iconBgNew.getWidth() / 2
+						&& x <= getWidth() - width + iconBgNew.getWidth() / 2) {
+
 					moveX = x;
-				} else if (x < 0) {
-					moveX = 0;
-				} else if (x > getWidth() - width) {
-					moveX = getWidth() - width;
+				} else if (x < -iconBgNew.getWidth() / 2) {
+					moveX = -iconBgNew.getWidth() / 2;
+				} else if (x > getWidth() - width + iconBgNew.getWidth() / 2) {
+					moveX = getWidth() - width + iconBgNew.getWidth() / 2;
 				}
 
 			} else {
 				if (distanceX < 0) {
+					// #FIXED
+					if (x <= iconBgNew.getWidth() / 2) {
 
-					if (x <= 0) {
 						moveX = x;
+
 					} else {
-						moveX = 0;
+						moveX = iconBgNew.getWidth() / 2;
 					}
 
 				} else if (distanceX > 0) {
 
-					if (x >= getWidth() - width) {
+					if (x >= getWidth() - width - iconBgNew.getWidth() / 2) {
 						moveX = x;
 					} else {
-						moveX = getWidth() - width;
+						moveX = getWidth() - width - iconBgNew.getWidth() / 2;
 					}
 
 				}
@@ -453,21 +465,38 @@ public class CustomMapView extends View {
 
 			if (height <= getHeight()) {
 
-				if (y >= 0 && y <= getHeight() - height) {
-					moveY = y;
+				if (y >= 0 && y <= getHeight() - height
+						|| y > getHeight() - height) {
+
+					if (ih - iconBgNew.getHeight() < 0) {
+
+						if (y <= iconBgNew.getHeight() - ih) {
+							moveY = y;
+						} else {
+							moveY = iconBgNew.getHeight() - ih;
+						}
+					}
 				} else if (y < 0) {
 					moveY = 0;
-				} else if (y > getHeight() - height) {
-					moveY = getHeight() - height;
 				}
 
 			} else {
 				if (distanceY < 0) {
 
-					if (y <= 0) {
-						moveY = y;
+					if (ih - iconBgNew.getHeight() < 0) {
+
+						if (y <= iconBgNew.getHeight() - ih) {
+							moveY = y;
+						} else {
+							moveY = iconBgNew.getHeight() - ih;
+						}
 					} else {
-						moveY = 0;
+						if (y <= 0) {
+							moveY = y;
+						} else {
+							moveY = 0;
+						}
+
 					}
 
 				} else if (distanceY > 0) {

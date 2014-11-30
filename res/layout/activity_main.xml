@@ -15,6 +15,7 @@
         android:id="@+id/grid_view"
         android:layout_width="match_parent"
         android:layout_height="100dp"
+        android:background="#ff00ff"
         android:numColumns="9" />
 
     <Button

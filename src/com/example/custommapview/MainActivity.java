@@ -42,7 +42,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
 		Bitmap bitmap = BitmapFactory.decodeStream(getResources()
-				.openRawResource(R.raw.aaa), new Rect(), options);
+				.openRawResource(R.raw.ic_test), new Rect(), options);
 		mCustomMapView.setMapBitmap(bitmap);
 		mCustomMapView.setOnClickGraphListener(new OnClickGraphListener() {
 
@@ -71,7 +71,8 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 
 	private ArrayList<GraphData> getData() {
 		ArrayList<GraphData> datas = new ArrayList<GraphData>();
-		datas.add(new GraphData(205, 223, GraphData.BLUE_POINT));
+//		datas.add(new GraphData(205, 223, GraphData.BLUE_POINT));
+		datas.add(new GraphData(1, 1, GraphData.BLUE_POINT));
 		datas.add(new GraphData(321, 157, GraphData.BLUE_POINT));
 		datas.add(new GraphData(520, 58, GraphData.BLUE_POINT));
 		datas.add(new GraphData(543, 250, GraphData.BLUE_POINT));
