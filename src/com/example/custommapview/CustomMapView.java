@@ -89,19 +89,26 @@ public class CustomMapView extends View {
 	Matrix matrix = new Matrix();
 	float[] m = new float[9];
 
-	private int iconBgWidth = convertDpToPx(200);
-	private int iconBgHeight = convertDpToPx(250);
+	private int iconBgWidth = convertDpToPx(60);
+	private int iconBgHeight = convertDpToPx(80);
 
 	Bitmap iconBg = null;
 	Bitmap iconBgNew = null;
 	Bitmap icon = null;
 	Bitmap iconNew = null;
+	Bitmap wc = null;
+	Bitmap stair = null;
+	Bitmap elevator = null;
+	Bitmap lift = null;
+
 	int location = -1;
+	int showType = -1;
 
 	private GestureDetectorCompat mDetector;
 	private ScaleGestureDetector scaleGestureDetector;
 
 	private ArrayList<GraphData> datas;
+	private ArrayList<GraphData> publicFacilities;
 
 	private OnClickGraphListener onClickGraphListener;
 
@@ -152,6 +159,11 @@ public class CustomMapView extends View {
 		this.onClickGraphListener = onClickGraphListener;
 	}
 
+	public void setShowType(int type) {
+		showType = type;
+		invalidate();
+	}
+
 	public Bitmap getMapBitmap() {
 		return mMapBitmap;
 	}
@@ -170,6 +182,12 @@ public class CustomMapView extends View {
 
 		this.datas = datas;
 		invalidate();
+	}
+
+	public void setPublicFacility(ArrayList<GraphData> publicFacilities) {
+
+		this.publicFacilities = publicFacilities;
+
 	}
 
 	public void setShowLocation(int location) {
@@ -216,6 +234,12 @@ public class CustomMapView extends View {
 		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
 				iconBgHeight, true);
 
+		wc = BitmapFactory.decodeResource(getResources(), R.drawable.wc);
+		elevator = BitmapFactory.decodeResource(getResources(),
+				R.drawable.elevator);
+		lift = BitmapFactory.decodeResource(getResources(), R.drawable.lift);
+		stair = BitmapFactory.decodeResource(getResources(), R.drawable.stair);
+
 	}
 
 	public void scaleUp() {
@@ -227,7 +251,7 @@ public class CustomMapView extends View {
 	}
 
 	public void scaleDown() {
-		if (scaleFactor > 0.5f && scaleFactor - 0.5f >= 0.5) {
+		if (scaleFactor > 1f && scaleFactor - 0.5f >= 1f) {
 			startAnimator(scaleFactor, scaleFactor - 0.5f);
 		} else if (scaleFactor > 0.5f && scaleFactor - 0.5f < 0.5) {
 			startAnimator(scaleFactor, 0.5f);
@@ -277,9 +301,11 @@ public class CustomMapView extends View {
 
 		if (isFirst) {
 
-			float scaleHeight = getHeight() / ((float) mMapBitmap.getHeight());
-			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
-			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
+			// float scaleHeight = getHeight() / ((float)
+			// mMapBitmap.getHeight());
+			// float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
+			// scaleFactor = scaleHeight > scaleWidth ? scaleWidth :
+			// scaleHeight;
 
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
 			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
@@ -300,10 +326,60 @@ public class CustomMapView extends View {
 			return;
 		}
 
-		for (int i = 0; i < datas.size(); i++) {
-			data = datas.get(i);
-			canvas.drawCircle(moveX + scaleFactor * data.getX(), moveY
-					+ scaleFactor * data.getY(), 5, mCirclePaint);
+		if (publicFacilities != null) {
+			for (int i = 0; i < publicFacilities.size(); i++) {
+				data = publicFacilities.get(i);
+				// canvas.drawCircle(moveX + scaleFactor * data.getX(), moveY
+				// + scaleFactor * data.getY(), 5, mCirclePaint);
+
+				switch (data.getType()) {
+				case GraphData.ELEVATOR_POINT:
+					if (showType == GraphData.ELEVATOR_POINT) {
+						canvas.drawBitmap(
+								elevator,
+								moveX + scaleFactor * data.getX()
+										- elevator.getWidth() / 2,
+								moveY + scaleFactor * data.getY()
+										- elevator.getHeight() / 2,
+								mCirclePaint);
+					}
+
+					break;
+				case GraphData.LIFT_POINT:
+					if (showType == GraphData.LIFT_POINT) {
+						canvas.drawBitmap(
+								lift,
+								moveX + scaleFactor * data.getX()
+										- lift.getWidth() / 2,
+								moveY + scaleFactor * data.getY()
+										- lift.getHeight() / 2, mCirclePaint);
+					}
+
+					break;
+				case GraphData.STAIR_POINT:
+					if (showType == GraphData.STAIR_POINT) {
+						canvas.drawBitmap(
+								stair,
+								moveX + scaleFactor * data.getX()
+										- stair.getWidth() / 2,
+								moveY + scaleFactor * data.getY()
+										- stair.getHeight() / 2, mCirclePaint);
+					}
+
+					break;
+				case GraphData.WC_POINT:
+					if (showType == GraphData.WC_POINT) {
+						canvas.drawBitmap(
+								wc,
+								moveX + scaleFactor * data.getX()
+										- wc.getWidth() / 2,
+								moveY + scaleFactor * data.getY()
+										- wc.getHeight() / 2, mCirclePaint);
+					}
+
+					break;
+				}
+			}
 		}
 
 		data = datas.get(showLocation);
@@ -323,31 +399,32 @@ public class CustomMapView extends View {
 			}
 
 			icon = BitmapFactory.decodeResource(getResources(), //
-					R.drawable.aa);
+					R.drawable.icon);
 
 			if (iconNew != null && !icon.equals(iconNew)) {
 				iconNew.recycle();
 			}
-			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(140),
-					convertDpToPx(120), true);
+			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(50),
+					convertDpToPx(40), true);
 
 		}
 
 		canvas.drawBitmap(iconNew, //
 				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
 				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-						+ convertDpToPx(30) //
+						+ convertDpToPx(5) //
 						- lineHeight, mCirclePaint); //
 
 		Paint paint = new Paint();
-		paint.setTextSize(convertSpToPx(24));
+		paint.setTextSize(convertSpToPx(12));
 		paint.setColor(Color.WHITE);
 		paint.setTextAlign(Align.CENTER);
-		canvas.drawText("F2-102", moveX + scaleFactor * data.getX(),
+		canvas.drawText("F2-10" + showLocation,
+				moveX + scaleFactor * data.getX(),
 				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
 						+ iconNew.getHeight()
-						+ getFontHeight(convertSpToPx(24)) + convertDpToPx(30)
-						+ convertDpToPx(20), paint);
+						+ getFontHeight(convertSpToPx(12)) + convertDpToPx(10),
+				paint);
 		location = showLocation;
 		previousScaleFactor = scaleFactor;
 	}
@@ -369,6 +446,10 @@ public class CustomMapView extends View {
 			iconBgNew.recycle();
 			icon.recycle();
 			iconNew.recycle();
+			elevator.recycle();
+			lift.recycle();
+			stair.recycle();
+			wc.recycle();
 		}
 	}
 
@@ -465,19 +546,13 @@ public class CustomMapView extends View {
 
 			if (height <= getHeight()) {
 
-				if (y >= 0 && y <= getHeight() - height
-						|| y > getHeight() - height) {
+				if (y >= -iconBgNew.getHeight() && y <= getHeight() - height) {
 
-					if (ih - iconBgNew.getHeight() < 0) {
-
-						if (y <= iconBgNew.getHeight() - ih) {
-							moveY = y;
-						} else {
-							moveY = iconBgNew.getHeight() - ih;
-						}
-					}
-				} else if (y < 0) {
-					moveY = 0;
+					moveY = y;
+				} else if (y < -iconBgNew.getHeight()) {
+					moveY = -iconBgNew.getHeight();
+				} else if (x > getHeight() - height) {
+					moveY = getHeight() - height;
 				}
 
 			} else {

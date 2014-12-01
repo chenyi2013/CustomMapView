@@ -2,8 +2,11 @@ package com.example.custommapview;
 
 public class GraphData {
 
-	public static final int BLUE_POINT = 1;
-	public static final int RED_POINT = 2;
+	public static final int SHOPS_POINT = 1;
+	public static final int LIFT_POINT = 2;
+	public static final int STAIR_POINT = 3;
+	public static final int ELEVATOR_POINT = 4;
+	public static final int WC_POINT = 5;
 
 	private float x;
 	private float y;
@@ -13,7 +16,7 @@ public class GraphData {
 		super();
 		this.x = x;
 		this.y = y;
-		type = BLUE_POINT;
+		type = SHOPS_POINT;
 	}
 
 	public GraphData(float x, float y, int type) {
