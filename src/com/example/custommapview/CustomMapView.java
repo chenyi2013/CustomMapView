@@ -25,6 +25,7 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewGroup;
 
 /**
  * 
@@ -32,7 +33,7 @@ import android.view.View;
  * 
  */
 @TargetApi(Build.VERSION_CODES.ICE_CREAM_SANDWICH)
-public class CustomMapView extends View {
+public class CustomMapView extends ViewGroup {
 
 	private Paint mCirclePaint;
 
@@ -107,8 +108,8 @@ public class CustomMapView extends View {
 	private GestureDetectorCompat mDetector;
 	private ScaleGestureDetector scaleGestureDetector;
 
-	private ArrayList<GraphData> datas;
-	private ArrayList<GraphData> publicFacilities;
+	private ArrayList<ShopsData> datas;
+	private ArrayList<PublicFacilityData> publicFacilities;
 
 	private OnClickGraphListener onClickGraphListener;
 
@@ -125,6 +126,7 @@ public class CustomMapView extends View {
 			object.scaleFactor = value;
 			scale();
 			invalidate();
+			requestLayout();
 		};
 	};
 
@@ -162,6 +164,7 @@ public class CustomMapView extends View {
 	public void setShowType(int type) {
 		showType = type;
 		invalidate();
+		requestLayout();
 	}
 
 	public Bitmap getMapBitmap() {
@@ -172,19 +175,21 @@ public class CustomMapView extends View {
 		this.mMapBitmap = mMapBitmap;
 
 		invalidate();
+		requestLayout();
 	}
 
 	public interface OnClickGraphListener {
 		public void onClick(int position);
 	}
 
-	public void bindData(ArrayList<GraphData> datas) {
+	public void bindData(ArrayList<ShopsData> datas) {
 
 		this.datas = datas;
 		invalidate();
+		requestLayout();
 	}
 
-	public void setPublicFacility(ArrayList<GraphData> publicFacilities) {
+	public void setPublicFacility(ArrayList<PublicFacilityData> publicFacilities) {
 
 		this.publicFacilities = publicFacilities;
 
@@ -193,6 +198,7 @@ public class CustomMapView extends View {
 	public void setShowLocation(int location) {
 		showLocation = location;
 		invalidate();
+		requestLayout();
 	}
 
 	public CustomMapView(Context context) {
@@ -293,7 +299,7 @@ public class CustomMapView extends View {
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
 
-		GraphData data = null;
+		ShopsData data = null;
 
 		if (mMapBitmap == null) {
 			return;
@@ -326,54 +332,50 @@ public class CustomMapView extends View {
 			return;
 		}
 
+		PublicFacilityData facilityData;
 		if (publicFacilities != null) {
 			for (int i = 0; i < publicFacilities.size(); i++) {
-				data = publicFacilities.get(i);
+				facilityData = publicFacilities.get(i);
 				// canvas.drawCircle(moveX + scaleFactor * data.getX(), moveY
 				// + scaleFactor * data.getY(), 5, mCirclePaint);
 
-				switch (data.getType()) {
-				case GraphData.ELEVATOR_POINT:
-					if (showType == GraphData.ELEVATOR_POINT) {
-						canvas.drawBitmap(
-								elevator,
-								moveX + scaleFactor * data.getX()
-										- elevator.getWidth() / 2,
-								moveY + scaleFactor * data.getY()
+				switch (facilityData.getType()) {
+				case PublicFacilityData.ELEVATOR:
+					if (showType == PublicFacilityData.ELEVATOR) {
+						canvas.drawBitmap(elevator,
+								moveX + scaleFactor * facilityData.getX()
+										- elevator.getWidth() / 2, moveY
+										+ scaleFactor * facilityData.getY()
 										- elevator.getHeight() / 2,
 								mCirclePaint);
 					}
 
 					break;
-				case GraphData.LIFT_POINT:
-					if (showType == GraphData.LIFT_POINT) {
-						canvas.drawBitmap(
-								lift,
-								moveX + scaleFactor * data.getX()
-										- lift.getWidth() / 2,
-								moveY + scaleFactor * data.getY()
+				case PublicFacilityData.ESCALATOR:
+					if (showType == PublicFacilityData.ESCALATOR) {
+						canvas.drawBitmap(lift, moveX + scaleFactor
+								* facilityData.getX() - lift.getWidth() / 2,
+								moveY + scaleFactor * facilityData.getY()
 										- lift.getHeight() / 2, mCirclePaint);
 					}
 
 					break;
-				case GraphData.STAIR_POINT:
-					if (showType == GraphData.STAIR_POINT) {
-						canvas.drawBitmap(
-								stair,
-								moveX + scaleFactor * data.getX()
-										- stair.getWidth() / 2,
-								moveY + scaleFactor * data.getY()
+				case PublicFacilityData.STAIRWAY:
+					if (showType == PublicFacilityData.STAIRWAY) {
+						canvas.drawBitmap(stair, moveX + scaleFactor
+								* facilityData.getX() - stair.getWidth() / 2,
+								moveY + scaleFactor * facilityData.getY()
 										- stair.getHeight() / 2, mCirclePaint);
 					}
 
 					break;
-				case GraphData.WC_POINT:
-					if (showType == GraphData.WC_POINT) {
+				case PublicFacilityData.TOILET:
+					if (showType == PublicFacilityData.TOILET) {
 						canvas.drawBitmap(
 								wc,
-								moveX + scaleFactor * data.getX()
+								moveX + scaleFactor * facilityData.getX()
 										- wc.getWidth() / 2,
-								moveY + scaleFactor * data.getY()
+								moveY + scaleFactor * facilityData.getY()
 										- wc.getHeight() / 2, mCirclePaint);
 					}
 
@@ -464,7 +466,7 @@ public class CustomMapView extends View {
 		private float width;
 		private float height;
 
-		private GraphData data = null;
+		private ShopsData data = null;
 		private boolean isChoice = false;
 
 		@Override
@@ -587,6 +589,7 @@ public class CustomMapView extends View {
 			}
 
 			invalidate();
+			requestLayout();
 			return true;
 		}
 
@@ -616,8 +619,31 @@ public class CustomMapView extends View {
 			scaleFactor = (float) Math.max(0.5, Math.min(scaleFactor, 2f));
 			scale();
 			invalidate();
+			requestLayout();
+
 			return true;
 		}
+	}
+
+	@Override
+	protected void onLayout(boolean changed, int l, int t, int r, int b) {
+		// TODO Auto-generated method stub
+		for (int i = 0, size = getChildCount(); i < size; i++) {
+			View view = getChildAt(i);
+//			int w = View.MeasureSpec.makeMeasureSpec(0,
+//					View.MeasureSpec.UNSPECIFIED);
+//			int h = View.MeasureSpec.makeMeasureSpec(0,
+//					View.MeasureSpec.UNSPECIFIED);
+//
+//			view.measure(w, h);
+			int height = view.getMeasuredHeight();
+			int width = view.getMeasuredWidth();
+
+			view.layout((int) moveX, (int) moveY, (int) moveX + width,
+					(int) moveY + height);
+
+		}
+
 	}
 
 }

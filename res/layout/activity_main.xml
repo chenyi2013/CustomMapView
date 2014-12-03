@@ -55,7 +55,27 @@
             android:id="@+id/map_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:text="@string/hello_world" />
+            android:background="#00ffffff"
+            android:text="@string/hello_world" >
+
+            <LinearLayout
+                android:layout_width="50dp"
+                android:layout_height="50dp"
+                android:background="#00ff00"
+                android:orientation="vertical" >
+
+                <ImageView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:src="@drawable/icon" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="aaaaaa"
+                    android:textColor="#ffffff" />
+            </LinearLayout>
+        </com.example.custommapview.CustomMapView>
 
         <Button
             android:id="@+id/scale_up"
