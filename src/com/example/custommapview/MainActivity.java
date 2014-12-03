@@ -32,7 +32,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	private TextView mElevator;
 	private TextView mStair;
 	private TextView mWc;
-	private ArrayList<GraphData> mData;
+	private ArrayList<ShopsData> mData;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -84,85 +84,86 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 
 	}
 
-	private ArrayList<GraphData> getPublicFacilities() {
-		ArrayList<GraphData> datas = new ArrayList<GraphData>();
+	private ArrayList<PublicFacilityData> getPublicFacilities() {
+		ArrayList<PublicFacilityData> datas = new ArrayList<PublicFacilityData>();
 
 		// lift
-		datas.add(new GraphData(153, 108, GraphData.LIFT_POINT));
-		datas.add(new GraphData(290, 108, GraphData.LIFT_POINT));
-		datas.add(new GraphData(344, 108, GraphData.LIFT_POINT));
-		datas.add(new GraphData(525, 108, GraphData.LIFT_POINT));
-		datas.add(new GraphData(812, 96, GraphData.LIFT_POINT));
-		datas.add(new GraphData(1083, 173, GraphData.LIFT_POINT));
+		datas.add(new PublicFacilityData(153, 108, PublicFacilityData.ESCALATOR));
+		datas.add(new PublicFacilityData(290, 108, PublicFacilityData.ESCALATOR));
+		datas.add(new PublicFacilityData(344, 108, PublicFacilityData.ESCALATOR));
+		datas.add(new PublicFacilityData(525, 108, PublicFacilityData.ESCALATOR));
+		datas.add(new PublicFacilityData(812, 96, PublicFacilityData.ESCALATOR));
+		datas.add(new PublicFacilityData(1083, 173,
+				PublicFacilityData.ESCALATOR));
 
 		// elevator
-		datas.add(new GraphData(225, 74, GraphData.ELEVATOR_POINT));
-		datas.add(new GraphData(411, 74, GraphData.ELEVATOR_POINT));
-		datas.add(new GraphData(604, 78, GraphData.ELEVATOR_POINT));
-		datas.add(new GraphData(780, 68, GraphData.ELEVATOR_POINT));
+		datas.add(new PublicFacilityData(225, 74, PublicFacilityData.ELEVATOR));
+		datas.add(new PublicFacilityData(411, 74, PublicFacilityData.ELEVATOR));
+		datas.add(new PublicFacilityData(604, 78, PublicFacilityData.ELEVATOR));
+		datas.add(new PublicFacilityData(780, 68, PublicFacilityData.ELEVATOR));
 
 		// stair
-		datas.add(new GraphData(253, 73, GraphData.STAIR_POINT));
-		datas.add(new GraphData(448, 74, GraphData.STAIR_POINT));
-		datas.add(new GraphData(942, 32, GraphData.STAIR_POINT));
+		datas.add(new PublicFacilityData(253, 73, PublicFacilityData.STAIRWAY));
+		datas.add(new PublicFacilityData(448, 74, PublicFacilityData.STAIRWAY));
+		datas.add(new PublicFacilityData(942, 32, PublicFacilityData.STAIRWAY));
 
 		// wc
-		datas.add(new GraphData(416, 56, GraphData.WC_POINT));
-		datas.add(new GraphData(779, 49, GraphData.WC_POINT));
+		datas.add(new PublicFacilityData(416, 56, PublicFacilityData.TOILET));
+		datas.add(new PublicFacilityData(779, 49, PublicFacilityData.TOILET));
 		return datas;
 
 	}
 
-	private ArrayList<GraphData> getData() {
-		ArrayList<GraphData> datas = new ArrayList<GraphData>();
-		datas.add(new GraphData(75, 113, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(140, 63, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(197, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(204, 109, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(239, 109, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(240, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(268, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(299, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(328, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(358, 147, GraphData.SHOPS_POINT));
+	private ArrayList<ShopsData> getData() {
+		ArrayList<ShopsData> datas = new ArrayList<ShopsData>();
+		datas.add(new ShopsData(75, 113));
+		datas.add(new ShopsData(140, 63));
+		datas.add(new ShopsData(197, 147));
+		datas.add(new ShopsData(204, 109));
+		datas.add(new ShopsData(239, 109));
+		datas.add(new ShopsData(240, 147));
+		datas.add(new ShopsData(268, 147));
+		datas.add(new ShopsData(299, 147));
+		datas.add(new ShopsData(328, 147));
+		datas.add(new ShopsData(358, 147));
 
-		datas.add(new GraphData(387, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(418, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(448, 147, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(218, 89, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(249, 89, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(409, 89, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(447, 89, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(334, 63, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(490, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(400, 109, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(482, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(482, 166, GraphData.SHOPS_POINT));
+		datas.add(new ShopsData(387, 147));
+		datas.add(new ShopsData(418, 147));
+		datas.add(new ShopsData(448, 147));
+		datas.add(new ShopsData(218, 89));
+		datas.add(new ShopsData(249, 89));
+		datas.add(new ShopsData(409, 89));
+		datas.add(new ShopsData(447, 89));
+		datas.add(new ShopsData(334, 63));
+		datas.add(new ShopsData(490, 54));
+		datas.add(new ShopsData(400, 109));
+		datas.add(new ShopsData(482, 140));
+		datas.add(new ShopsData(482, 166));
 
-		datas.add(new GraphData(550, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(598, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(627, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(656, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(683, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(708, 54, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(817, 53, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(863, 53, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(909, 53, GraphData.SHOPS_POINT));
+		datas.add(new ShopsData(550, 54));
+		datas.add(new ShopsData(598, 54));
+		datas.add(new ShopsData(627, 54));
+		datas.add(new ShopsData(656, 54));
+		datas.add(new ShopsData(683, 54));
+		datas.add(new ShopsData(708, 54));
+		datas.add(new ShopsData(817, 53));
+		datas.add(new ShopsData(863, 53));
+		datas.add(new ShopsData(909, 53));
 
-		datas.add(new GraphData(734, 68, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(756, 68, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(684, 95, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(976, 93, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(1136, 85, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(663, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(693, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(731, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(790, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(838, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(890, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(939, 140, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(1123, 128, GraphData.SHOPS_POINT));
-		datas.add(new GraphData(1149, 163, GraphData.SHOPS_POINT));
+		datas.add(new ShopsData(734, 68));
+		datas.add(new ShopsData(756, 68));
+		datas.add(new ShopsData(684, 95));
+		datas.add(new ShopsData(976, 93));
+		datas.add(new ShopsData(1136, 85));
+		datas.add(new ShopsData(663, 140));
+		datas.add(new ShopsData(693, 140));
+		datas.add(new ShopsData(731, 140));
+		datas.add(new ShopsData(790, 140));
+		datas.add(new ShopsData(838, 140));
+		datas.add(new ShopsData(890, 140));
+		datas.add(new ShopsData(939, 140));
+		datas.add(new ShopsData(1123, 128));
+		datas.add(new ShopsData(1149, 163));
 
 		return datas;
 
@@ -180,19 +181,19 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 
 			break;
 		case R.id.lift:
-			mCustomMapView.setShowType(GraphData.LIFT_POINT);
+			mCustomMapView.setShowType(PublicFacilityData.ESCALATOR);
 
 			break;
 		case R.id.elevator:
-			mCustomMapView.setShowType(GraphData.ELEVATOR_POINT);
+			mCustomMapView.setShowType(PublicFacilityData.ELEVATOR);
 
 			break;
 		case R.id.stair:
-			mCustomMapView.setShowType(GraphData.STAIR_POINT);
+			mCustomMapView.setShowType(PublicFacilityData.STAIRWAY);
 
 			break;
 		case R.id.wc:
-			mCustomMapView.setShowType(GraphData.WC_POINT);
+			mCustomMapView.setShowType(PublicFacilityData.TOILET);
 
 			break;
 		}
