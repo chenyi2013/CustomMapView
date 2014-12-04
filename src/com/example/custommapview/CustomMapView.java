@@ -10,17 +10,13 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Paint.Align;
 import android.graphics.Paint.Style;
-import android.graphics.Rect;
 import android.os.Build;
 import android.support.v4.view.GestureDetectorCompat;
 import android.util.AttributeSet;
 import android.util.Property;
-import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -56,17 +52,14 @@ public class CustomMapView extends ViewGroup {
 	 */
 	private float previousScaleFactor = -1f;
 
+	private float initScaleFactor = 1f;
+
 	/**
 	 * 当前在地图上标出的标签
 	 */
 	private int showLocation = 0;
 
 	private AnimatorSet mAnimatorSet;
-
-	/**
-	 * 当前在地图上标出的标签底部竖线的高度
-	 */
-	private float lineHeight = 0;
 
 	/**
 	 * 用于判断是否是初次设置地图图片
@@ -77,26 +70,12 @@ public class CustomMapView extends ViewGroup {
 	 * 设置的地图图片
 	 */
 	private Bitmap mMapBitmap;
-
-	/**
-	 * 手指在屏幕上按下的点在X轴方向的座标
-	 */
-	private float currentX = 0;
-	/**
-	 * 手指在屏幕上按下的点在Y轴方向的座标
-	 */
-	private float currentY = 0;
-
 	Matrix matrix = new Matrix();
 	float[] m = new float[9];
 
-	private int iconBgWidth = convertDpToPx(60);
-	private int iconBgHeight = convertDpToPx(80);
+	private int iconBgWidth = 0;
+	private int iconBgHeight = 0;
 
-	Bitmap iconBg = null;
-	Bitmap iconBgNew = null;
-	Bitmap icon = null;
-	Bitmap iconNew = null;
 	Bitmap wc = null;
 	Bitmap stair = null;
 	Bitmap elevator = null;
@@ -173,7 +152,6 @@ public class CustomMapView extends ViewGroup {
 
 	public void setMapBitmap(Bitmap mMapBitmap) {
 		this.mMapBitmap = mMapBitmap;
-
 		invalidate();
 		requestLayout();
 	}
@@ -235,11 +213,6 @@ public class CustomMapView extends ViewGroup {
 		scaleGestureDetector = new ScaleGestureDetector(getContext(),
 				new ScaleListener());
 
-		iconBg = BitmapFactory.decodeResource(getResources(),
-				R.drawable.icon_bg);
-		iconBgNew = Bitmap.createScaledBitmap(iconBg, iconBgWidth,
-				iconBgHeight, true);
-
 		wc = BitmapFactory.decodeResource(getResources(), R.drawable.wc);
 		elevator = BitmapFactory.decodeResource(getResources(),
 				R.drawable.elevator);
@@ -257,7 +230,8 @@ public class CustomMapView extends ViewGroup {
 	}
 
 	public void scaleDown() {
-		if (scaleFactor > 1f && scaleFactor - 0.5f >= 1f) {
+		if (scaleFactor >= initScaleFactor
+				&& scaleFactor - 0.5f >= initScaleFactor) {
 			startAnimator(scaleFactor, scaleFactor - 0.5f);
 		} else if (scaleFactor > 0.5f && scaleFactor - 0.5f < 0.5) {
 			startAnimator(scaleFactor, 0.5f);
@@ -265,54 +239,20 @@ public class CustomMapView extends ViewGroup {
 
 	}
 
-	/**
-	 * 得到字体高度
-	 * 
-	 * @param fontSize
-	 * @return
-	 */
-	private int getFontHeight(float fontSize) {
-		Paint paint = new Paint();
-		paint.setTextSize(fontSize);
-		Rect rect = new Rect();
-		paint.getTextBounds("0000", 0, "0000".length(), rect);
-		return rect.height();
-
-	}
-
-	private int convertDpToPx(float dp) {
-
-		return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp,
-				getResources().getDisplayMetrics());
-
-	}
-
-	private float convertSpToPx(float sp) {
-
-		return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp,
-				getResources().getDisplayMetrics());
-
-	}
-
 	@SuppressLint({ "DrawAllocation", "NewApi" })
 	@Override
 	protected void onDraw(Canvas canvas) {
 		super.onDraw(canvas);
-
-		ShopsData data = null;
-
 		if (mMapBitmap == null) {
 			return;
 		}
 
 		if (isFirst) {
 
-			// float scaleHeight = getHeight() / ((float)
-			// mMapBitmap.getHeight());
-			// float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
-			// scaleFactor = scaleHeight > scaleWidth ? scaleWidth :
-			// scaleHeight;
-
+			float scaleHeight = getHeight() / ((float) mMapBitmap.getHeight());
+			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
+			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
+			initScaleFactor = scaleFactor;
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
 			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
 
@@ -336,9 +276,6 @@ public class CustomMapView extends ViewGroup {
 		if (publicFacilities != null) {
 			for (int i = 0; i < publicFacilities.size(); i++) {
 				facilityData = publicFacilities.get(i);
-				// canvas.drawCircle(moveX + scaleFactor * data.getX(), moveY
-				// + scaleFactor * data.getY(), 5, mCirclePaint);
-
 				switch (facilityData.getType()) {
 				case PublicFacilityData.ELEVATOR:
 					if (showType == PublicFacilityData.ELEVATOR) {
@@ -383,50 +320,6 @@ public class CustomMapView extends ViewGroup {
 				}
 			}
 		}
-
-		data = datas.get(showLocation);
-
-		canvas.drawLine(moveX + scaleFactor * data.getX(), moveY + scaleFactor
-				* data.getY(), moveX + scaleFactor * data.getX(), moveY
-				+ scaleFactor * data.getY() - lineHeight, mCirclePaint);
-
-		canvas.drawBitmap(iconBgNew, moveX + scaleFactor * data.getX()
-				- iconBgNew.getWidth() / 2, moveY + scaleFactor * data.getY()
-				- iconBgNew.getHeight() - lineHeight, mCirclePaint);
-
-		if (showLocation != location) {
-
-			if (icon != null) {
-				icon.recycle();
-			}
-
-			icon = BitmapFactory.decodeResource(getResources(), //
-					R.drawable.icon);
-
-			if (iconNew != null && !icon.equals(iconNew)) {
-				iconNew.recycle();
-			}
-			iconNew = Bitmap.createScaledBitmap(icon, convertDpToPx(50),
-					convertDpToPx(40), true);
-
-		}
-
-		canvas.drawBitmap(iconNew, //
-				moveX + scaleFactor * data.getX() - iconNew.getWidth() / 2, //
-				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-						+ convertDpToPx(5) //
-						- lineHeight, mCirclePaint); //
-
-		Paint paint = new Paint();
-		paint.setTextSize(convertSpToPx(12));
-		paint.setColor(Color.WHITE);
-		paint.setTextAlign(Align.CENTER);
-		canvas.drawText("F2-10" + showLocation,
-				moveX + scaleFactor * data.getX(),
-				moveY + scaleFactor * data.getY() - iconBgNew.getHeight()
-						+ iconNew.getHeight()
-						+ getFontHeight(convertSpToPx(12)) + convertDpToPx(10),
-				paint);
 		location = showLocation;
 		previousScaleFactor = scaleFactor;
 	}
@@ -444,10 +337,6 @@ public class CustomMapView extends ViewGroup {
 		super.onDetachedFromWindow();
 		if (mMapBitmap != null) {
 			mMapBitmap.recycle();
-			iconBg.recycle();
-			iconBgNew.recycle();
-			icon.recycle();
-			iconNew.recycle();
 			elevator.recycle();
 			lift.recycle();
 			stair.recycle();
@@ -460,36 +349,13 @@ public class CustomMapView extends ViewGroup {
 		private float x;
 		private float y;
 
-		private float dx;
-		private float dy;
-
 		private float width;
 		private float height;
 
 		private ShopsData data = null;
-		private boolean isChoice = false;
 
 		@Override
 		public boolean onDown(MotionEvent e) {
-
-			currentX = e.getX();
-			currentY = e.getY();
-
-			if (datas != null) {
-
-				data = datas.get(showLocation);
-				if (moveX + scaleFactor * data.getX() - iconBgNew.getWidth()
-						/ 2 <= currentX
-						&& moveX + scaleFactor * data.getX()
-								+ iconBgNew.getWidth() / 2 >= currentX
-						&& moveY + scaleFactor * data.getY()
-								- iconBgNew.getHeight() - lineHeight <= currentY
-						&& moveY + scaleFactor * data.getY() - lineHeight >= currentY) {
-
-					isChoice = true;
-
-				}
-			}
 			return true;
 		}
 
@@ -513,33 +379,32 @@ public class CustomMapView extends ViewGroup {
 
 			if (width < getWidth()) {
 
-				if (x >= -iconBgNew.getWidth() / 2
-						&& x <= getWidth() - width + iconBgNew.getWidth() / 2) {
+				if (x >= -iconBgWidth / 2
+						&& x <= getWidth() - width + iconBgWidth / 2) {
 
 					moveX = x;
-				} else if (x < -iconBgNew.getWidth() / 2) {
-					moveX = -iconBgNew.getWidth() / 2;
-				} else if (x > getWidth() - width + iconBgNew.getWidth() / 2) {
-					moveX = getWidth() - width + iconBgNew.getWidth() / 2;
+				} else if (x < -iconBgWidth / 2) {
+					moveX = -iconBgWidth / 2;
+				} else if (x > getWidth() - width + iconBgWidth / 2) {
+					moveX = getWidth() - width + iconBgWidth / 2;
 				}
 
 			} else {
 				if (distanceX < 0) {
-					// #FIXED
-					if (x <= iconBgNew.getWidth() / 2) {
+					if (x <= iconBgWidth / 2) {
 
 						moveX = x;
 
 					} else {
-						moveX = iconBgNew.getWidth() / 2;
+						moveX = iconBgWidth / 2;
 					}
 
 				} else if (distanceX > 0) {
 
-					if (x >= getWidth() - width - iconBgNew.getWidth() / 2) {
+					if (x >= getWidth() - width - iconBgWidth / 2) {
 						moveX = x;
 					} else {
-						moveX = getWidth() - width - iconBgNew.getWidth() / 2;
+						moveX = getWidth() - width - iconBgWidth / 2;
 					}
 
 				}
@@ -548,11 +413,11 @@ public class CustomMapView extends ViewGroup {
 
 			if (height <= getHeight()) {
 
-				if (y >= -iconBgNew.getHeight() && y <= getHeight() - height) {
+				if (y >= -iconBgHeight && y <= getHeight() - height) {
 
 					moveY = y;
-				} else if (y < -iconBgNew.getHeight()) {
-					moveY = -iconBgNew.getHeight();
+				} else if (y < -iconBgHeight) {
+					moveY = -iconBgHeight;
 				} else if (x > getHeight() - height) {
 					moveY = getHeight() - height;
 				}
@@ -560,12 +425,12 @@ public class CustomMapView extends ViewGroup {
 			} else {
 				if (distanceY < 0) {
 
-					if (ih - iconBgNew.getHeight() < 0) {
+					if (ih - iconBgHeight < 0) {
 
-						if (y <= iconBgNew.getHeight() - ih) {
+						if (y <= iconBgHeight - ih) {
 							moveY = y;
 						} else {
-							moveY = iconBgNew.getHeight() - ih;
+							moveY = iconBgHeight - ih;
 						}
 					} else {
 						if (y <= 0) {
@@ -587,25 +452,8 @@ public class CustomMapView extends ViewGroup {
 				}
 
 			}
-
 			invalidate();
 			requestLayout();
-			return true;
-		}
-
-		@Override
-		public boolean onSingleTapUp(MotionEvent e) {
-			dx = e.getX() - currentX;
-			dy = e.getY() - currentY;
-
-			if (isChoice && Math.sqrt(dx) < convertDpToPx(5)
-					&& Math.sqrt(dy) < convertDpToPx(5)) {
-				if (onClickGraphListener != null) {
-					onClickGraphListener.onClick(showLocation);
-				}
-			}
-
-			isChoice = false;
 			return true;
 		}
 
@@ -627,23 +475,28 @@ public class CustomMapView extends ViewGroup {
 
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
-		// TODO Auto-generated method stub
+
 		for (int i = 0, size = getChildCount(); i < size; i++) {
 			View view = getChildAt(i);
-//			int w = View.MeasureSpec.makeMeasureSpec(0,
-//					View.MeasureSpec.UNSPECIFIED);
-//			int h = View.MeasureSpec.makeMeasureSpec(0,
-//					View.MeasureSpec.UNSPECIFIED);
-//
-//			view.measure(w, h);
-			int height = view.getMeasuredHeight();
-			int width = view.getMeasuredWidth();
+			int w = View.MeasureSpec.makeMeasureSpec(0,
+					View.MeasureSpec.UNSPECIFIED);
+			int h = View.MeasureSpec.makeMeasureSpec(0,
+					View.MeasureSpec.UNSPECIFIED);
 
-			view.layout((int) moveX, (int) moveY, (int) moveX + width,
-					(int) moveY + height);
+			view.measure(w, h);
+			iconBgHeight = view.getMeasuredHeight();
+			iconBgWidth = view.getMeasuredWidth();
+
+			ShopsData data = null;
+
+			if (datas != null) {
+				data = datas.get(showLocation);
+				int x = (int) (moveX + scaleFactor * data.getX() - iconBgWidth / 2);
+				int y = (int) (moveY + scaleFactor * data.getY() - iconBgHeight);
+				view.layout(x, y, x + iconBgWidth, y + iconBgHeight);
+			}
 
 		}
 
 	}
-
 }

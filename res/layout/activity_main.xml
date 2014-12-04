@@ -55,26 +55,39 @@
             android:id="@+id/map_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
+            android:layout_toLeftOf="@+id/scale_down"
+            android:layout_toRightOf="@+id/scale_up"
             android:background="#00ffffff"
             android:text="@string/hello_world" >
 
-            <LinearLayout
-                android:layout_width="50dp"
-                android:layout_height="50dp"
-                android:background="#00ff00"
-                android:orientation="vertical" >
+            <RelativeLayout
+                android:id="@+id/icon_layout"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" >
 
-                <ImageView
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:src="@drawable/icon" />
+                    android:background="@drawable/icon_bg"
+                    android:gravity="center"
+                    android:orientation="vertical"
+                    android:padding="5dp" >
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="aaaaaa"
-                    android:textColor="#ffffff" />
-            </LinearLayout>
+                    <ImageView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/icon" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:padding="5dp"
+                        android:text="aaaaaa"
+                        android:textColor="#ffffff"
+                        android:textSize="12sp" />
+                </LinearLayout>
+            </RelativeLayout>
         </com.example.custommapview.CustomMapView>
 
         <Button

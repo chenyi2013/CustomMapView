@@ -18,6 +18,7 @@ import android.widget.Button;
 import android.widget.GridView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -34,8 +35,10 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 	private TextView mStair;
 	private TextView mWc;
 	private ArrayList<ShopsData> mData;
+	private RelativeLayout mRelativeLayout;
 
 	LinearLayout la;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -55,6 +58,18 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		mCustomMapView = (CustomMapView) findViewById(R.id.map_view);
 		mCustomMapView.bindData(mData = getData());
 		mCustomMapView.setPublicFacility(getPublicFacilities());
+
+		mRelativeLayout = (RelativeLayout) mCustomMapView
+				.findViewById(R.id.icon_layout);
+		mRelativeLayout.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View v) {
+
+				System.out.println("DDDDDDDDDDD__DFDFDFFDF");
+
+			}
+		});
 
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = false;
