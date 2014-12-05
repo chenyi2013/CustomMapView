@@ -11,6 +11,13 @@ public class ShopsData implements GraphDataInterface {
 		this.y = y;
 	}
 
+	public ShopsData(float x, float y, String location) {
+		super();
+		this.x = x;
+		this.y = y;
+		this.location = location;
+	}
+
 	@Override
 	public void setX(float x) {
 

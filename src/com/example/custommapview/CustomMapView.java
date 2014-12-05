@@ -22,6 +22,8 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 /**
  * 
@@ -70,18 +72,22 @@ public class CustomMapView extends ViewGroup {
 	 * …Ë÷√µƒµÿÕºÕº∆¨
 	 */
 	private Bitmap mMapBitmap;
+	private Bitmap mIcon;
+
 	Matrix matrix = new Matrix();
 	float[] m = new float[9];
 
 	private int iconBgWidth = 0;
 	private int iconBgHeight = 0;
 
+	private View mChild;
+	private TextView mTitle;
+	private ImageView mIconImg;
+
 	Bitmap wc = null;
 	Bitmap stair = null;
 	Bitmap elevator = null;
 	Bitmap lift = null;
-
-	int location = -1;
 	int showType = -1;
 
 	private GestureDetectorCompat mDetector;
@@ -156,6 +162,22 @@ public class CustomMapView extends ViewGroup {
 		requestLayout();
 	}
 
+	public void setTitle(String title) {
+		if (mTitle != null) {
+			mTitle.setText(title);
+		}
+
+	}
+
+	public void setIcon(Bitmap bitmap) {
+
+		mIcon = bitmap;
+		if (mIconImg != null) {
+			mIconImg.setImageBitmap(bitmap);
+		}
+
+	}
+
 	public interface OnClickGraphListener {
 		public void onClick(int position);
 	}
@@ -175,6 +197,10 @@ public class CustomMapView extends ViewGroup {
 
 	public void setShowLocation(int location) {
 		showLocation = location;
+		if (datas != null) {
+			setTitle(datas.get(showLocation).getLocation());
+
+		}
 		invalidate();
 		requestLayout();
 	}
@@ -208,6 +234,8 @@ public class CustomMapView extends ViewGroup {
 
 	private void init(Context context) {
 		initPaint();
+		setWillNotDraw(false);
+
 		mDetector = new GestureDetectorCompat(getContext(),
 				new MyGestureListener());
 		scaleGestureDetector = new ScaleGestureDetector(getContext(),
@@ -221,20 +249,43 @@ public class CustomMapView extends ViewGroup {
 
 	}
 
+	@Override
+	protected void onAttachedToWindow() {
+		super.onAttachedToWindow();
+		mChild = getChildAt(0);
+		if (mChild != null) {
+
+			mChild.setVisibility(View.INVISIBLE);
+			mTitle = (TextView) findViewById(R.id.title_tv);
+			mIconImg = (ImageView) findViewById(R.id.icon_img);
+			mChild.setOnClickListener(new OnClickListener() {
+
+				@Override
+				public void onClick(View v) {
+
+					if (onClickGraphListener != null) {
+						onClickGraphListener.onClick(showLocation);
+					}
+				}
+			});
+
+		}
+
+	}
+
 	public void scaleUp() {
-		if (scaleFactor < 2 && scaleFactor + 0.5f <= 2) {
-			startAnimator(scaleFactor, scaleFactor + 0.5f);
-		} else if (scaleFactor < 2 && scaleFactor + 0.5f > 2) {
-			startAnimator(scaleFactor, 2);
+		if (scaleFactor < 1.5f * initScaleFactor) {
+			startAnimator(scaleFactor, 1.5f * initScaleFactor);
+		} else if (scaleFactor < 2f * initScaleFactor) {
+			startAnimator(scaleFactor, 2f * initScaleFactor);
 		}
 	}
 
 	public void scaleDown() {
-		if (scaleFactor >= initScaleFactor
-				&& scaleFactor - 0.5f >= initScaleFactor) {
-			startAnimator(scaleFactor, scaleFactor - 0.5f);
-		} else if (scaleFactor > 0.5f && scaleFactor - 0.5f < 0.5) {
-			startAnimator(scaleFactor, 0.5f);
+		if (scaleFactor > 1.5f * initScaleFactor) {
+			startAnimator(scaleFactor, 1.5f * initScaleFactor);
+		} else if (scaleFactor > initScaleFactor) {
+			startAnimator(scaleFactor, initScaleFactor);
 		}
 
 	}
@@ -251,12 +302,26 @@ public class CustomMapView extends ViewGroup {
 
 			float scaleHeight = getHeight() / ((float) mMapBitmap.getHeight());
 			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
+
 			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
 			initScaleFactor = scaleFactor;
+
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
 			moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
 
 			isFirst = false;
+
+			requestLayout();
+
+			if (datas != null) {
+				setTitle(datas.get(showLocation).getLocation());
+			}
+			if (mIcon != null) {
+				setIcon(mIcon);
+			}
+
+			mChild.setVisibility(View.VISIBLE);
+
 		}
 
 		matrix.getValues(m);
@@ -320,7 +385,7 @@ public class CustomMapView extends ViewGroup {
 				}
 			}
 		}
-		location = showLocation;
+
 		previousScaleFactor = scaleFactor;
 	}
 
@@ -464,7 +529,8 @@ public class CustomMapView extends ViewGroup {
 		@Override
 		public boolean onScale(ScaleGestureDetector detector) {
 			scaleFactor *= detector.getScaleFactor();
-			scaleFactor = (float) Math.max(0.5, Math.min(scaleFactor, 2f));
+			scaleFactor = (float) Math.max(initScaleFactor,
+					Math.min(scaleFactor, 2f * initScaleFactor));
 			scale();
 			invalidate();
 			requestLayout();
@@ -476,27 +542,34 @@ public class CustomMapView extends ViewGroup {
 	@Override
 	protected void onLayout(boolean changed, int l, int t, int r, int b) {
 
-		for (int i = 0, size = getChildCount(); i < size; i++) {
-			View view = getChildAt(i);
+		if (mChild == null) {
+			mChild = getChildAt(0);
+
+		}
+
+		if (mChild != null) {
+
 			int w = View.MeasureSpec.makeMeasureSpec(0,
 					View.MeasureSpec.UNSPECIFIED);
 			int h = View.MeasureSpec.makeMeasureSpec(0,
 					View.MeasureSpec.UNSPECIFIED);
 
-			view.measure(w, h);
-			iconBgHeight = view.getMeasuredHeight();
-			iconBgWidth = view.getMeasuredWidth();
+			mChild.measure(w, h);
+			iconBgHeight = mChild.getMeasuredHeight();
+			iconBgWidth = mChild.getMeasuredWidth();
 
 			ShopsData data = null;
 
 			if (datas != null) {
+
 				data = datas.get(showLocation);
 				int x = (int) (moveX + scaleFactor * data.getX() - iconBgWidth / 2);
 				int y = (int) (moveY + scaleFactor * data.getY() - iconBgHeight);
-				view.layout(x, y, x + iconBgWidth, y + iconBgHeight);
+				mChild.layout(x, y, x + iconBgWidth, y + iconBgHeight);
 			}
 
 		}
 
 	}
+
 }

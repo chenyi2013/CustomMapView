@@ -57,13 +57,13 @@
             android:layout_height="match_parent"
             android:layout_toLeftOf="@+id/scale_down"
             android:layout_toRightOf="@+id/scale_up"
-            android:background="#00ffffff"
             android:text="@string/hello_world" >
 
             <RelativeLayout
                 android:id="@+id/icon_layout"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent" >
+                android:layout_height="match_parent"
+                android:visibility="invisible" >
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -74,11 +74,13 @@
                     android:padding="5dp" >
 
                     <ImageView
+                        android:id="@+id/icon_img"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:src="@drawable/icon" />
 
                     <TextView
+                        android:id="@+id/title_tv"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:gravity="center"
