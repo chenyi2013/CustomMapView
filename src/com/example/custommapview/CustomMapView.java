@@ -169,6 +169,7 @@ public class CustomMapView extends ViewGroup {
 
 	public void setMapBitmap(Bitmap mMapBitmap) {
 		this.mMapBitmap = mMapBitmap;
+		isFirst = true;
 		invalidate();
 		requestLayout();
 	}
@@ -326,7 +327,7 @@ public class CustomMapView extends ViewGroup {
 			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
 
 			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
-			
+
 			initScaleFactor = scaleFactor;
 
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
