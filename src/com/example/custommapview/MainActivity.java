@@ -23,8 +23,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.custommapview.CustomMapView.OnClickGraphListener;
+import com.example.custommapview.CustomMapView.OnMapScaleListener;
 
-public class MainActivity extends ActionBarActivity implements OnClickListener {
+public class MainActivity extends ActionBarActivity implements OnClickListener,
+		OnMapScaleListener {
 
 	private Button mScaleUp;
 	private Button mScaleDown;
@@ -64,6 +66,7 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 		mCustomMapView.setPublicFacility(getPublicFacilities());
 		mCustomMapView.setMapBitmap(bitmap);
 		mCustomMapView.bindData(mData = getData());
+		mCustomMapView.setOnMapScaleListener(this);
 		mCustomMapView.setShowLocation(0);
 		final Bitmap bitmap1 = BitmapFactory.decodeResource(getResources(),
 				R.drawable.icon);
@@ -275,5 +278,17 @@ public class MainActivity extends ActionBarActivity implements OnClickListener {
 			}
 			return convertView;
 		}
+	}
+
+	@Override
+	public void isSaleUp(boolean isTrue) {
+
+		mScaleUp.setEnabled(isTrue);
+
+	}
+
+	@Override
+	public void isSaleDown(boolean isTrue) {
+		mScaleDown.setEnabled(isTrue);
 	}
 }

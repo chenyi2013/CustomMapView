@@ -97,6 +97,7 @@ public class CustomMapView extends ViewGroup {
 	private ArrayList<PublicFacilityData> publicFacilities;
 
 	private OnClickGraphListener onClickGraphListener;
+	private OnMapScaleListener onMapScaleListener;
 
 	private Property<CustomMapView, Float> mSacleFactorProperty = new Property<CustomMapView, Float>(
 			Float.class, "scaleFactor") {
@@ -116,12 +117,22 @@ public class CustomMapView extends ViewGroup {
 	};
 
 	private void scale() {
+
 		moveX = moveX
 				- ((scaleFactor - previousScaleFactor) * mMapBitmap.getWidth())
 				/ 2;
 		moveY = moveY
 				- ((scaleFactor - previousScaleFactor) * mMapBitmap.getHeight())
 				/ 2;
+
+	}
+
+	public OnMapScaleListener getOnMapScaleListener() {
+		return onMapScaleListener;
+	}
+
+	public void setOnMapScaleListener(OnMapScaleListener onMapScaleListener) {
+		this.onMapScaleListener = onMapScaleListener;
 	}
 
 	private void startAnimator(float start, float end) {
@@ -182,6 +193,12 @@ public class CustomMapView extends ViewGroup {
 		public void onClick(int position);
 	}
 
+	public interface OnMapScaleListener {
+		public void isSaleUp(boolean isTrue);
+
+		public void isSaleDown(boolean isTrue);
+	}
+
 	public void bindData(ArrayList<ShopsData> datas) {
 
 		this.datas = datas;
@@ -229,6 +246,7 @@ public class CustomMapView extends ViewGroup {
 		mCirclePaint.setDither(true);
 		mCirclePaint.setStyle(Style.STROKE);
 		mCirclePaint.setStrokeWidth(2);
+		mCirclePaint.setFilterBitmap(true);
 		mCirclePaint.setColor(0xff000000);
 	}
 
@@ -282,6 +300,10 @@ public class CustomMapView extends ViewGroup {
 	}
 
 	public void scaleDown() {
+
+		moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
+		moveY = (getHeight() - scaleFactor * mMapBitmap.getHeight()) / 2;
+
 		if (scaleFactor > 1.5f * initScaleFactor) {
 			startAnimator(scaleFactor, 1.5f * initScaleFactor);
 		} else if (scaleFactor > initScaleFactor) {
@@ -304,6 +326,7 @@ public class CustomMapView extends ViewGroup {
 			float scaleWidth = getWidth() / ((float) mMapBitmap.getWidth());
 
 			scaleFactor = scaleHeight > scaleWidth ? scaleWidth : scaleHeight;
+			
 			initScaleFactor = scaleFactor;
 
 			moveX = (getWidth() - scaleFactor * mMapBitmap.getWidth()) / 2;
@@ -383,6 +406,20 @@ public class CustomMapView extends ViewGroup {
 
 					break;
 				}
+			}
+		}
+
+		if (onMapScaleListener != null) {
+			if (scaleFactor > initScaleFactor) {
+				onMapScaleListener.isSaleDown(true);
+			} else {
+				onMapScaleListener.isSaleDown(false);
+			}
+
+			if (scaleFactor < 2f * initScaleFactor) {
+				onMapScaleListener.isSaleUp(true);
+			} else {
+				onMapScaleListener.isSaleUp(false);
 			}
 		}
 
